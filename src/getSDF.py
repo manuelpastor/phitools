@@ -105,23 +105,23 @@ def getSDF(out,data,iformat,idname):
 
 def usage ():
     """Prints in the screen the command syntax and argument"""
-    print 'getSDF -f|s|i input.csv [--tag=name] [-o output.sdf]'
+    print 'getSDF -f|s|i input.csv [--id=molecule_id] [-o output.sdf]'
     print '\n\t -f input.csv (molecules as names)'
     print '\t -s input.csv (molecules as SMILES)'
     print '\t -i input.csv (molecules as InChI)'
-    print '\t --tag=name field where the molIDs will be added)'
+    print '\t --id=molecule_id field where the unique id will be added)'
     print '\t -o output.sdf (output SDFile)'
 
     sys.exit(1)
 
 def main ():
-    out= 'output_getSDF.sdf'
+    out= 'output.sdf'
     data = None
     iformat = None
     idname = 'name'
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:],'f:s:i:o:', ['tag='])
+       opts, args = getopt.getopt(sys.argv[1:],'f:s:i:o:', ['id='])
     except getopt.GetoptError:
        usage()
        print "False, Arguments not recognized"
@@ -143,7 +143,7 @@ def main ():
             elif opt in '-i':
                 data = arg
                 iformat = 'inchis'
-            elif opt in '--tag':
+            elif opt in '--id':
                 idname = arg
 
     if not data: usage()

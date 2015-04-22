@@ -90,16 +90,16 @@ def saveListAsHTML(l,out):
 
 def usage ():
     """Prints in the screen the command syntax and argument"""
-    print 'viewSDF [-f file.sdf] [-o sdfile.html] [-p name]'
+    print 'viewSDF [-f file.sdf] [-o output.html] [--name=name]'
     sys.exit(1)
 
 def main ():
     sdf = None
-    out = 'sdfile.html'
+    out = 'output.html'
     prop = 'name'
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:],'f:o:p:', [])
+       opts, args = getopt.getopt(sys.argv[1:],'f:o:', ['name='])
     except getopt.GetoptError:
        usage()
        print "False, Arguments not recognized"
@@ -111,7 +111,7 @@ def main ():
                 sdf = arg
             elif opt in '-o':
                 out = arg
-            elif opt in '-p':
+            elif opt in '--name':
                 prop = arg
 
     if sdf is None:

@@ -106,11 +106,11 @@ def addData (sdf_id, data_id, prop_id, out_id):
 
 def usage ():
     """Prints in the screen the command syntax and argument"""
-    print 'addiSDFToData -f file.sdf -a data.csv -p molecule_id [-o output.sdf]'
+    print 'addSDFToData -f file.sdf -d data.csv --id=molecule_id [-o output.sdf]'
     print '\n\t data.csv contains tab separated info and a single line header'
-    print '\t one of the columns must contain a label present also in the SDFile, which is used for the matching'
-    print '\t the label can be specified using the parameter -p '
-    print '\t the output file contains only molecules present in the data.csv'
+    print '\t one of the columns must contain a unique id, present also in the SDFile, which is used for the matching'
+    print '\t this field can be specified using the parameter --id '
+    print '\t the output file will include only molecules present in the data.csv'
     sys.exit(1)
 
 def main ():
@@ -121,7 +121,7 @@ def main ():
     out = 'output.sdf'
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:],'f:a:p:o:', [])
+       opts, args = getopt.getopt(sys.argv[1:],'f:d:o:', ['id='])
     except getopt.GetoptError:
        usage()
        print "Error. Arguments not recognized"
@@ -134,9 +134,9 @@ def main ():
         for opt, arg in opts:
             if opt in '-f':
                 sdf = arg
-            elif opt in '-a':
+            elif opt in '-d':
                 data = arg
-            elif opt in '-p':
+            elif opt in '--id':
                 prop = arg
             elif opt in '-o':
                 out = arg

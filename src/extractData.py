@@ -102,7 +102,7 @@ def extractAll (mol):
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'extractData -f sdfile.sdf [--name|--field=Activ|--table]'
+    print 'extractData -f file.sdf [--name=|--field=activ|--table]'
 
 def main ():
 
