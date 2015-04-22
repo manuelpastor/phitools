@@ -1,66 +1,83 @@
-import urllib
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+##    Description    Visualize a SDFile as a web page
+##                   
+##    Authors:       Inés Martínez (mmartinez4@imim.es)
+##                   Manuel Pastor (manuel.pastor@upf.edu)
+##
+##    Copyright 2015 Manuel Pastor
+##
+##    This file is part of PhiTools
+##
+##    PhiTools is free software: you can redistribute it and/or modify
+##    it under the terms of the GNU General Public License as published by
+##    the Free Software Foundation version 3.
+##
+##    PhiTools is distributed in the hope that it will be useful,
+##    but WITHOUT ANY WARRANTY; without even the implied warranty of
+##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##    GNU General Public License for more details.
+##
+##    You should have received a copy of the GNU General Public License
+##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
+
 from rdkit import Chem
 from rdkit.Chem import AllChem,Draw,Descriptors
 import os
 import sys
 import getopt
-import re
-from PIL import ImageTk, Image
-import glob
 
-def viewSDF (sdf,out,prop):
-
-    if sdf:
-        sdf_id = sdf
-    else:
-        sdf_id = 'file.sdf'
-
-    if out:
-        out_id = out
-    else:
-        out_id = 'sdf.html'
-
-    if prop:
-        prop_id = prop
-    else:
-        prop_id = 'name'
+def viewSDF (sdf_id,out_id,prop_id):
 
     # Read SDF
     suppl = Chem.SDMolSupplier(sdf_id)
 
     # Create directory to save images
-    if not os.path.exists('images/'):
-        os.makedirs('images/')
-        
-    # Get property headers
-    prop_names=[prop_id]
-    for i in suppl[0].GetPropNames():
-        prop_names.append(i.lower())
+    imagedir =  os.path.basename(out_id).split('.')[0]
+    imagedir += '_images/'
+    if not os.path.exists(imagedir):
+        os.makedirs(imagedir)
 
     # Create a list containing the sdf data
+    counter=1
     l=[]
-    l.append(prop_names)
-    for mol in suppl:
-        if mol is None: continue
+
+    # Create header
+    l.append(['#','structure',prop_id])
         
-        #Save images
-        name=mol.GetProp(prop_id)
-        Draw.MolToFile(mol,'images/'+name+'.png')
-       
-        #Store properties
+    for mol in suppl:
         l1=[]
-        l1.append('<img src="images/'+name+'.png" height=200 width=200>')
-        for i in prop_names[1:]:
-            l1.append(mol.GetProp(mol.GetPropNames()[prop_names.index(i)-1]))
+        l1.append(str(counter)) # counter is created, even if no mol was found
+        
+        if not (mol is None): 
+
+            name = 'mol%0.8d'%counter # fallback name
+            try:
+                name=mol.GetProp(prop_id)
+            except:
+                pass
+
+            Draw.MolToFile(mol,imagedir+name+'.png')
+            
+            #l1.append('<img src="'+imagedir+name+'.png" height=200 width=200>')
+            l1.append('<img src="'+imagedir+name+'.png" ')
+            l1.append(name)
 
         l.append(l1)
+        counter+=1
         
     saveListAsHTML(l, out_id)
         
 def saveListAsHTML(l,out):
 
     fo = open (out,'w+')
-    fo.write('<table border="0.5">\n')
+
+    fo.write ('<html xmlns="http://www.w3.org/1999/xhtml">'+
+              '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'+
+              '<title>'+out+'</title></head><body>')
+  
+    fo.write('<table border="1">\n')
 
     for column in l:
         fo.write('<tr>',)    
@@ -68,17 +85,18 @@ def saveListAsHTML(l,out):
             fo.write('<td>'+i+'</td>')      
         fo.write('</tr>\n')
         
-    fo.write('</table>')
+    fo.write('</table></body></html>')
     fo.close()
 
 def usage ():
     """Prints in the screen the command syntax and argument"""
-    print 'viewSDF -f file.sdf -o sdf.html -p name' 
+    print 'viewSDF [-f file.sdf] [-o sdfile.html] [-p name]'
+    sys.exit(1)
 
 def main ():
     sdf = None
-    out = None
-    prop = None
+    out = 'sdfile.html'
+    prop = 'name'
     
     try:
        opts, args = getopt.getopt(sys.argv[1:],'f:o:p:', [])
@@ -86,10 +104,6 @@ def main ():
        usage()
        print "False, Arguments not recognized"
        sys.exit(1)
-
-    if args:
-       usage()
-       print "False, Arguments not recognized"
 
     if len(opts)>0:
         for opt, arg in opts:
@@ -99,6 +113,9 @@ def main ():
                 out = arg
             elif opt in '-p':
                 prop = arg
+
+    if sdf is None:
+        usage()
 
     viewSDF(sdf,out,prop)
 

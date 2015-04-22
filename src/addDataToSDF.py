@@ -3,23 +3,24 @@
 
 ##    Description    Add Data to SDFile
 ##                   
-##    Authors:       Manuel Pastor (manuel.pastor@upf.edu) 
+##    Authors:       Inés Martínez (mmartinez4@imim.es)
+##                   Manuel Pastor (manuel.pastor@upf.edu)
 ##
 ##    Copyright 2015 Manuel Pastor
 ##
-##    This file is part of eTOXlab.
+##    This file is part of PhiTools
 ##
-##    eTOXlab is free software: you can redistribute it and/or modify
+##    PhiTools is free software: you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
 ##    the Free Software Foundation version 3.
 ##
-##    eTOXlab is distributed in the hope that it will be useful,
+##    PhiTools is distributed in the hope that it will be useful,
 ##    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ##    GNU General Public License for more details.
 ##
 ##    You should have received a copy of the GNU General Public License
-##    along with eTOXlab.  If not, see <http://www.gnu.org/licenses/>
+##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
 import os
