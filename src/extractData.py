@@ -30,7 +30,7 @@ def extractNames (mol):
 
     suppl=Chem.SDMolSupplier(mol)
 
-    count = 0
+    count = 1
     while True:
         try:
             mi = suppl.next()
@@ -46,7 +46,7 @@ def extractNames (mol):
         if not name:
             name = mi.GetProp('_Name')
         if not name:
-            name = 'mol%0.4d'%count
+            name = 'mol%0.8d'%count
         count +=1
 
         print name
@@ -75,38 +75,34 @@ def extractField (mol,field):
 
 def extractAll (mol):
 
-    f = open (mol,'r')
+    suppl = Chem.SDMolSupplier(mol)
+    
+    isFirst = True
+    header = []
+    for m in suppl:
 
-    molBlock = True
-    tag = False
-    for line in f:
-        if line.startswith('M  END'):
-            molBlock = False
+        if m is None: continue
+        
+        if isFirst:
+            for i in m.GetPropNames():
+                header.append(i)
+                print i+'\t',
             print
-        if line.startswith('$$$$'):
-            molBlock = True
+            isFirst = False
 
-        if not molBlock:
-            if line.startswith ('>  <'):
-                col = line[4:-2]+':'
-                tag = True
-            elif tag:
-                col += line[:-1]
-                tag = False
-                print col+'\t',
-        
-    f.close()
-        
-def addData (mol, data):
+        for i in header:
+            try:
+                print m.GetProp(i)+'\t',
+            except:
+                print 'na\t',
+        print
 
-    print 'addData', mol, data
-    print 'under development. feature not implemented!'
 
     
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'sdftool -f sdfile.sdf [--name|--add=data.csv|--field=Activ|--table]'
+    print 'extractData -f sdfile.sdf [--name|--field=Activ|--table]'
 
 def main ():
 
@@ -141,10 +137,6 @@ def main ():
                 action = 'field'
                 field = arg
 
-            elif opt in '--add':
-                action = 'add'
-                data = arg
-
             elif opt in '--table':
                 action = 'table'
                 
@@ -162,13 +154,6 @@ def main ():
             sys.exit(1)
             
         extractNames (mol)
-        
-    elif action == 'add':
-        if mol== None or data== None:
-            usage()
-            sys.exit(1)
-            
-        addData (mol, data)
 
     elif action == 'field':
         if mol== None or field== None:
