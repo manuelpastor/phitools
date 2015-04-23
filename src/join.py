@@ -26,7 +26,7 @@ import os
 import sys
 import getopt
 
-def join (fileA,fileB,key,out):
+def join (fileA,fileB,key,out,soft):
 
     # Open files
     fa = open (fileA,'r')
@@ -34,7 +34,7 @@ def join (fileA,fileB,key,out):
     fo = open (out,'w+')
 
     #identify key in both files
-    ha = fa.readline().split('\t')
+    ha = fa.readline().rstrip().split('\t')
     
     try:
         indexA = ha.index(key)
@@ -42,7 +42,7 @@ def join (fileA,fileB,key,out):
         print 'key not fount in file '+fileA
         sys.exit(1)
 
-    hb = fb.readline().split('\t')
+    hb = fb.readline().rstrip().split('\t')
     try:
         indexB = hb.index(key)
     except:
@@ -57,19 +57,31 @@ def join (fileA,fileB,key,out):
         linelist = line.split('\t')
         lineraw = ''
         for i in range(len(linelist)):
+            value = linelist[i]
             if i!=indexB:
-                lineraw+='\t'+linelist[i]
+                lineraw+='\t'+value
             else:
-                vIndex.append(linelist[i])
+                if soft: value = value[:-3]
+                vIndex.append(value)
         vault.append(lineraw)
     fb.close()
     
     j=0
+
+    #write header
+    for i in ha:
+        fo.write (i+'\t')
+        
+    for i in hb:
+        if i!=key:
+            fo.write (i+'\t')
+    fo.write('\n')
     
     # read file A
     for line in fa:
         linelist = line.split('\t')
         k = linelist[indexA]
+        if soft: k = k[:-3]
         try:
             j = vIndex.index(k)
         except:
@@ -78,13 +90,14 @@ def join (fileA,fileB,key,out):
         fo.write(line[:-1])
         fo.write(vault[j])
         
-        
     fa.close()
     fo.close()
  
 def usage ():
     """Prints in the screen the command syntax and argument"""
-    print 'join -a fileA.csv -b fileB.csv --id molecule_id [-o output.csv]'
+    print 'join -a fileA.csv -b fileB.csv --id molecule_id [-o output.csv] [--soft]'
+    print '\n\tjoins fileA.csv and fileB.csv using as key the column labeled as indicated by the --id parameter'
+    print '\tthe --soft parameter is used when InChiKey based comparisons are performed, discaring the last 3 chars'
     sys.exit(1)
 
 def main ():
@@ -92,9 +105,10 @@ def main ():
     fileB = None
     key = None
     out = 'output.csv'
+    soft = False
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:],'a:b:o:', ['id='])
+       opts, args = getopt.getopt(sys.argv[1:],'a:b:o:', ['id=', 'soft'])
     except getopt.GetoptError:
        usage()
        print "False, Arguments not recognized"
@@ -110,11 +124,13 @@ def main ():
                 out = arg
             elif opt in '--id':
                 key = arg
+            elif opt in '--soft':
+                soft = True
                 
     if fileA is None or fileB is None or key is None:
         usage()
 
-    join (fileA, fileB, key, out)
+    join (fileA, fileB, key, out, soft)
 
 if __name__ == '__main__':    
     main()
