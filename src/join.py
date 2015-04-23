@@ -34,28 +34,52 @@ def join (fileA,fileB,key,out):
     fo = open (out,'w+')
 
     #identify key in both files
-    ha = fa.readline().strip('\t')
+    ha = fa.readline().split('\t')
+    
     try:
         indexA = ha.index(key)
     except:
         print 'key not fount in file '+fileA
         sys.exit(1)
 
-    hb = fb.readline().strip('\t')
+    hb = fb.readline().split('\t')
     try:
         indexB = hb.index(key)
     except:
         print 'key not fount in file '+fileB
         sys.exit(1)
 
-    # read both files
-  
-
-    fa.close()
-    fb.close()
-
-    # write output
     
+    vault = []
+    vIndex = []
+    # read file B in memory and index key
+    for line in fb:
+        linelist = line.split('\t')
+        lineraw = ''
+        for i in range(len(linelist)):
+            if i!=indexB:
+                lineraw+='\t'+linelist[i]
+            else:
+                vIndex.append(linelist[i])
+        vault.append(lineraw)
+    fb.close()
+    
+    j=0
+    
+    # read file A
+    for line in fa:
+        linelist = line.split('\t')
+        k = linelist[indexA]
+        try:
+            j = vIndex.index(k)
+        except:
+            continue
+        
+        fo.write(line[:-1])
+        fo.write(vault[j])
+        
+        
+    fa.close()
     fo.close()
  
 def usage ():
