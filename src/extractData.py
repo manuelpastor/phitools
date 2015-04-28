@@ -75,20 +75,26 @@ def extractField (mol,field):
 
 def extractAll (mol):
 
-    suppl = Chem.SDMolSupplier(mol)
-    
-    isFirst = True
     header = []
+    
+    suppl = Chem.SDMolSupplier(mol)
     for m in suppl:
 
         if m is None: continue
         
-        if isFirst:
-            for i in m.GetPropNames():
+        for i in m.GetPropNames():
+            if not (i in header):
                 header.append(i)
-                print i+'\t',
-            print
-            isFirst = False
+
+    for i in header:
+        print i+'\t',
+    print
+    
+    suppl = Chem.SDMolSupplier(mol)
+
+    for m in suppl:
+
+        if m is None: continue
 
         for i in header:
             try:
