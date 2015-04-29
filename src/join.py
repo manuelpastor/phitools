@@ -54,7 +54,7 @@ def join (fileA,fileB,key,out,soft):
     vIndex = []
     # read file B in memory and index key
     for line in fb:
-        linelist = line.split('\t')
+        linelist = line.rstrip().split('\t')
         lineraw = ''
         for i in range(len(linelist)):
             value = linelist[i]
@@ -79,7 +79,7 @@ def join (fileA,fileB,key,out,soft):
     
     # read file A
     for line in fa:
-        linelist = line.split('\t')
+        linelist = line.rstrip().split('\t')
         k = linelist[indexA]
         if soft: k = k[:-3]
         try:
@@ -89,6 +89,7 @@ def join (fileA,fileB,key,out,soft):
         
         fo.write(line[:-1])
         fo.write(vault[j])
+        fo.write('\n')
         
     fa.close()
     fo.close()
