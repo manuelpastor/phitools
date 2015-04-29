@@ -29,13 +29,18 @@ import getopt
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def getSDF(out,data,iformat,idname):
+def getSDF(out,data,iformat,idname,header):
 
     vals = []
     noms = []    
     f = open (data)
     counter=0
     for line in f:
+        if counter==0 :
+            if header :
+                counter+=1
+                continue
+            
         line=line.rstrip()
         line=line.split('\t')
 
@@ -119,16 +124,17 @@ def main ():
     data = None
     iformat = None
     idname = 'name'
+    header = False
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:],'f:s:i:o:', ['id='])
+       opts, args = getopt.getopt(sys.argv[1:],'f:s:i:o:', ['header','id='])
     except getopt.GetoptError:
-       usage()
-       print "False, Arguments not recognized"
+        print "Arguments not recognized"
+        usage()
     
     if not len(opts):
-       usage()
-       print "False, Arguments not recognized"
+        print "Arguments not recognized"
+        usage()
 
     if len(opts)>0:
         for opt, arg in opts:
@@ -145,10 +151,12 @@ def main ():
                 iformat = 'inchis'
             elif opt in '--id':
                 idname = arg
+            elif opt in '--header':
+                header = True
 
     if not data: usage()
     
-    getSDF(out,data,iformat,idname)    
+    getSDF(out,data,iformat,idname,header)    
 
 if __name__ == '__main__':    
     main()
