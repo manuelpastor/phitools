@@ -31,7 +31,7 @@ import getopt
 def addInchi (sdf,out):
 
     # Read SDF
-    suppl = Chem.SDMolSupplier(sdf)
+    suppl = Chem.SDMolSupplier(sdf,removeHs=False, sanitize=False)
 
     # Create header
     fo = open(out,'w+')
@@ -40,7 +40,7 @@ def addInchi (sdf,out):
 
         if mol is None: continue
         
-        fo.write(Chem.MolToMolBlock(mol))
+        fo.write(Chem.MolToMolBlock(mol,kekulize=False))
 
         pnames = []
         for i in mol.GetPropNames():
