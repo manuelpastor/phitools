@@ -79,7 +79,8 @@ def join (fileA,fileB,key,out,soft):
     
     # read file A
     for line in fa:
-        linelist = line.rstrip().split('\t')
+        line = line.rstrip()
+        linelist = line.split('\t')
         k = linelist[indexA]
         if soft: k = k[:-3]
         try:
@@ -87,8 +88,8 @@ def join (fileA,fileB,key,out,soft):
         except:
             continue
         
-        fo.write(line[:-1])
-        fo.write(vault[j])
+        fo.write(line)
+        fo.write(vault[j]) # vault elements start with a tab
         fo.write('\n')
         
     fa.close()
