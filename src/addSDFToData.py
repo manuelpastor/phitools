@@ -73,7 +73,7 @@ def addData (sdf_id, data_id, prop_id, out_id):
     # Process SDFile  #
     ###################
   
-    suppl = Chem.SDMolSupplier(sdf_id)
+    suppl = Chem.SDMolSupplier(sdf_id, removeHs=False, sanitize=False)
     print "Input file has",len(suppl),"molecules"
     fo = open (out_id,'w+')
     
@@ -91,7 +91,7 @@ def addData (sdf_id, data_id, prop_id, out_id):
         for i in vals:
             if i[ind]==db_id:
                 # Add MolBlock
-                fo.write(Chem.MolToMolBlock(mol))
+                fo.write(Chem.MolToMolBlock(mol, kekulize=False))
                 
                 # Add values
                 for j in range(len(i)):                          
