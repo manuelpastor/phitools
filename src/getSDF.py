@@ -74,24 +74,24 @@ def getSDF(out,data,iformat,idname,header):
     for v,n in zip(vals,noms):
         
         if iformat == 'names':
-            print v, 
+            print v,'\t', 
             smi = urllib.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+v+'/smiles')
             smi1 = smi.readline().rstrip()
         else:
             smi1 = v  
 
-        if smi1:
+        if smi1 and not ('Page not found' in smi1):
             print smi1
         else:
             print 'error processing ', v
             continue
-
+        
         try:
             m = Chem.MolFromSmiles(smi1)
             Chem.AllChem.Compute2DCoords(m)
             m.SetProp(idname,n)
         except:
-            print 'error processing ', v
+            print 'error processing', v
             continue
             
         mb = Chem.MolToMolBlock(m)        
