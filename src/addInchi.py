@@ -52,13 +52,18 @@ def addInchi (sdf,out):
             
         for pn,pv in zip(pnames,pvalues):        
             fo.write('>  <'+pn+'>\n'+pv+'\n\n')
-        
+
+        inchi = 'na'
+        inkey = 'na'
+
         try:
             inchi = Chem.MolToInchi(mol)
             inkey = Chem.InchiToInchiKey(inchi)
         except:
-            inchi = 'na'
-            inkey = 'na'
+            pass
+
+        if inchi is None : inchi='na'
+        if inkey is None : inkey='na'
 
         fo.write('>  <inchi>\n'+inchi+'\n\n')
         fo.write('>  <inchikey>\n'+inkey+'\n\n')
