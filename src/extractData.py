@@ -23,159 +23,85 @@
 
 import os
 import sys
-import getopt
+import argparse
 from rdkit import Chem
 
-def extractNames (mol):
+def molName(mol, count):
+    name = ''
+    if mol.HasProp ('name'):
+        name = mol.GetProp('name')
+    if not name:
+        name = mol.GetProp('_Name')
+    if not name:
+        name = 'mol%0.8d'%count
+    return name
 
-    suppl=Chem.SDMolSupplier(mol)
-
+def extractNames (args):
+    suppl=Chem.SDMolSupplier(args.sdf.name)
     count = 1
-    while True:
-        try:
-            mi = suppl.next()
-        except:
-            break
-
-        if not mi:
-            break
-
-        name = ''
-        if mi.HasProp ('name'):
-            name = mi.GetProp('name')
-        if not name:
-            name = mi.GetProp('_Name')
-        if not name:
-            name = 'mol%0.8d'%count
+    for m in suppl:
+        name = molName(m, count)
         count +=1
+        args.out.write('{}\n'.format(name))
 
-        print name
-
-def extractField (mol,field):
-
-    suppl=Chem.SDMolSupplier(mol)
-
-    count = 0
-    while True:
-        try:
-            mi = suppl.next()
-        except:
-            break
-
-        if not mi:
-            break
-
-        name = ''
-        if mi.HasProp (field):
-            name = mi.GetProp(field)
+def extractField (args):
+    suppl=Chem.SDMolSupplier(args.sdf.name)
+    for m in suppl:
+        if m.HasProp (args.field):
+            value = m.GetProp(args.field)
         else:
-            name = 'na'
-            
-        print name
+            value = 'NA'
+        args.out.write('{}\n'.format(value))
 
-def extractAll (mol):
+def extractAll (args):
 
-    header = []
-    
-    suppl = Chem.SDMolSupplier(mol)
+    fields = set()
+    # Cycle through all molecules to make sure all field names are stored
+    suppl = Chem.SDMolSupplier(args.sdf.name)
     for m in suppl:
-
         if m is None: continue
-        
-        for i in m.GetPropNames():
-            if not (i in header):
-                header.append(i)
-
-    for i in header:
-        print i+'\t',
-    print
+        fields = fields.union(set(m.GetPropNames()))
+    fields = list(fields)
+    header = ['ID']
+    header.extend(fields)
+    args.out.write('{}\n'.format('\t'.join(header)))
     
-    suppl = Chem.SDMolSupplier(mol)
-
+    suppl = Chem.SDMolSupplier(args.sdf.name)
+    count = 1
     for m in suppl:
-
         if m is None: continue
+        line = [molName(m, count)]
+        for field in fields:
+            if m.HasProp (field):
+                value = m.GetProp(field)
+            else:
+                value = 'NA'
+            line.append(value)
+        args.out.write('{}\n'.format('\t'.join(line)))
+        count += 1
 
-        for i in header:
-            try:
-                print m.GetProp(i)+'\t',
-            except:
-                print 'na\t',
-        print
-
-
-    
-def usage ():
-    """Prints in the screen the command syntax and argument"""
-    
-    print 'extractData -f file.sdf [--name=|--field=activ|--table]'
 
 def main ():
 
-    mol = None
-    action = None
-    data = None
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('-i', '--sdf', type=argparse.FileType('rb'), help='SD file', required=True)
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-f', '--field', type=str, help='Extract only the data in this field of the SD file.')
+    group.add_argument('-a', '--all', action='store_true', help='Extract data in all fields.')
+    group.add_argument('-n', '--name', action='store_true', help='Extract molecule names.')
+    parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.tsv', help='Output file name (default: output.tsv)')
+    args = parser.parse_args()
+    args.sdf.close()
+
+    if args.name:
+        extractNames (args)
+    elif args.field:
+        extractField (args)
+    else:
+        extractAll (args)
+
+    args.out.close()
     
-    try:
-       opts, args = getopt.getopt(sys.argv[1:], 'f:',
-                                  ['name','add=','field=','table'])
-
-    except getopt.GetoptError:
-       print('Error. Arguments not recognized')
-       usage()
-       sys.exit(1)
-
-    if args:
-       print('Error. Arguments not recognized')
-       usage()
-       sys.exit(1)
-        
-    if len( opts ) > 0:
-        for opt, arg in opts:
-                
-            if opt in '-f':
-                mol = arg
-                
-            elif opt in '--name':
-                action = 'name'
-                
-            elif opt in '--field':
-                action = 'field'
-                field = arg
-
-            elif opt in '--table':
-                action = 'table'
-                
-            elif opt in '-h':
-                usage()
-                sys.exit(0)
-
-    #print action, mol, data
-
-    if action == None:
-        usage()
-        sys.exit(1)
-    elif action == 'name':
-        if mol == None:
-            sys.exit(1)
-            
-        extractNames (mol)
-
-    elif action == 'field':
-        if mol== None or field== None:
-            usage()
-            sys.exit(1)
-            
-        extractField (mol, field)
-        
-    elif action == 'table':
-        if mol== None:
-            usage()
-            sys.exit(1)
-            
-        extractAll (mol)
-        
-    sys.exit(0)
         
 if __name__ == '__main__':
     
