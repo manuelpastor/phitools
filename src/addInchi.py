@@ -26,21 +26,21 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 import os
 import sys
-import getopt
+import argparse
 
-def addInchi (sdf,out):
+def addInchi (args):
 
     # Read SDF
-    suppl = Chem.SDMolSupplier(sdf,removeHs=False, sanitize=False)
+    suppl = Chem.SDMolSupplier(args.sdf.name,removeHs=False, sanitize=False)
 
     # Create header
-    fo = open(out,'w+')
+    #fo = open(args.out,'w+')
     
     for mol in suppl:
 
         if mol is None: continue
         
-        fo.write(Chem.MolToMolBlock(mol,kekulize=False))
+        args.out.write(Chem.MolToMolBlock(mol,kekulize=False))
 
         pnames = []
         for i in mol.GetPropNames():
@@ -51,7 +51,7 @@ def addInchi (sdf,out):
             pvalues.append(mol.GetProp(i))
             
         for pn,pv in zip(pnames,pvalues):        
-            fo.write('>  <'+pn+'>\n'+pv+'\n\n')
+            args.out.write('>  <'+pn+'>\n'+pv+'\n\n')
 
         inchi = 'na'
         inkey = 'na'
@@ -65,40 +65,20 @@ def addInchi (sdf,out):
         if inchi is None : inchi='na'
         if inkey is None : inkey='na'
 
-        fo.write('>  <inchi>\n'+inchi+'\n\n')
-        fo.write('>  <inchikey>\n'+inkey+'\n\n')
+        args.out.write('>  <inchi>\n'+inchi+'\n\n')
+        args.out.write('>  <inchikey>\n'+inkey+'\n\n')
 
-        fo.write('$$$$\n')
+        args.out.write('$$$$\n')
 
-    fo.close()
- 
-def usage ():
-    """Prints in the screen the command syntax and argument"""
-    print 'addInchi [-f file.sdf] [-o output.sdf]'
-    sys.exit(1)
+    args.out.close()
 
 def main ():
-    sdf = None
-    out = 'output.sdf'
-    
-    try:
-       opts, args = getopt.getopt(sys.argv[1:],'f:o:', [])
-    except getopt.GetoptError:
-       usage()
-       print "False, Arguments not recognized"
-       sys.exit(1)
+    parser = argparse.ArgumentParser(description='Add Inchi into a field for each molecule in the input SD file.')
+    parser.add_argument('-f', '--sdf', type=argparse.FileType('r'), help='SD file', required=True)
+    parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.sdf', help='Output SD file name (default: output.sdf)')
+    args = parser.parse_args()
 
-    if len(opts)>0:
-        for opt, arg in opts:
-            if opt in '-f':
-                sdf = arg
-            elif opt in '-o':
-                out = arg
-                
-    if sdf is None:
-        usage()
-
-    addInchi (sdf,out)
+    addInchi (args)
 
 if __name__ == '__main__':    
     main()
