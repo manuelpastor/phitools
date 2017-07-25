@@ -25,7 +25,7 @@
 from rdkit import Chem
 import os
 import sys
-import getopt
+import argparse
 import re
 
 def addData (sdf_id, data_id, prop_id, out_id):
@@ -55,16 +55,16 @@ def addData (sdf_id, data_id, prop_id, out_id):
         for i in tags[0]:
             match=re.search(prop_id[:5], i)
             if match:
-                print "Property descriptor not found, please try again. Similar property found:" + i
+                print("Property descriptor not found, please try again. Similar property found:" + i)
                 return
             else:
                 match=re.search(prop_id[len(prop_id)-5:], i)
                 if match:
-                    print "Property descriptor not found, please try again. Similar property found:" + i
+                    print("Property descriptor not found, please try again. Similar property found:" + i)
                     return                
         #not found 
         if i == tags[0][-1]:
-            print "property descriptor not found"
+            print("property descriptor not found")
             return
     else:
         ind=tags[0].index(prop_id)
@@ -74,7 +74,7 @@ def addData (sdf_id, data_id, prop_id, out_id):
     ###################
   
     suppl = Chem.SDMolSupplier(sdf_id, removeHs=False, sanitize=False)
-    print "Input file has",len(suppl),"molecules"
+    print("Input file has",len(suppl),"molecules")
     fo = open (out_id,'w+')
     
     for mol in suppl:
@@ -106,50 +106,18 @@ def addData (sdf_id, data_id, prop_id, out_id):
     fo.close()
     
     suppl1 = Chem.SDMolSupplier(out_id)
-    print "Output file has",len(suppl1),"molecules"
-
-def usage ():
-    """Prints in the screen the command syntax and argument"""
-    print 'addDataToSDF -f file.sdf -d data.csv --id=molecule_id [-o output.sdf]'
-    print '\n\t data.csv contains tab separated info and a single line header'
-    print '\t one of the columns must contain a unique id, present also in the SDFile, which is used for the matching'
-    print '\t this field can be specified using the parameter --id '
-    print '\t the output file will include all molecules present in the original SDFile'
-    sys.exit(1)
+    print("Output file has",len(suppl1),"molecules")
 
 def main ():
-    
-    sdf = None
-    data = None
-    prop = None
-    out = 'output.sdf'
-    
-    try:
-       opts, args = getopt.getopt(sys.argv[1:],'f:d:o:', ['id='])
-    except getopt.GetoptError:
-       usage()
-       print "Error. Arguments not recognized"
 
-    if args:
-       usage()
-       print "Error. Arguments not recognized"
+    parser = argparse.ArgumentParser(description='Add data from an input table into SD file fields. The data file must be a tab separated file with a single line header. One of the columns must contain a unique id, present also in the SDFile, which is used for the matching. This field can be specified using the parameter -i | --id.')
+    parser.add_argument('-f', '--sdf', type=argparse.FileType('r'), help='SD file', required=True)
+    parser.add_argument('-d', '--data', type=argparse.FileType('r'), help='Data file', required=True)
+    parser.add_argument('-i', '--id', type=str, help='moleculeID', required=True)
+    parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.sdf', help='Output file name (default: output.sdf)')
+    args = parser.parse_args()
 
-    if len(opts)>0:
-        for opt, arg in opts:
-            if opt in '-f':
-                sdf = arg
-            elif opt in '-d':
-                data = arg
-            elif opt in '--id':
-                prop = arg
-            elif opt in '-o':
-                out = arg
-
-    if sdf==None or data==None or prop==None:
-        usage()
-        print "Error. Missing arguments"
-
-    addData(sdf, data, prop, out)    
+    addData(args.sdf, args.data, args.id, args.out)    
 
 if __name__ == '__main__':    
     main()
