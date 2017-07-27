@@ -22,141 +22,89 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import os
 import sys
-import getopt
+import argparse
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def getSDF(out,data,iformat,idname,header):
+def getSDF(args):
+    #out,data,iformat,idname,header):
 
     vals = []
-    noms = []    
-    f = open (data)
-    counter=0
-    for line in f:
-        if counter==0 :
-            if header :
-                counter+=1
-                continue
-            
-        line=line.rstrip()
-        line=line.split('\t')
-
-        vals.append(line[0])  # the mol must be in the first place
-        if len(line)>1:
-            noms.append(line[1])
-        else:
-            noms.append('mol%0.8d'%counter)
-        counter+=1
-    f.close()
+    noms = []
+    args.data.readline()  # Header
+    counter = 1
+    query = [line.rstrip().split('\t')[args.column-1] for line in args.data]
+    args.data.close()
 
     # for inchis use SDWriter
-    if iformat == 'inchis':
-        writer = Chem.rdmolfiles.SDWriter(out)
-        for v,n in zip(vals,noms):
-            print v[:20]
+    if args.inchis:
+        args.out.close()
+        writer = Chem.rdmolfiles.SDWriter(args.out.name)
+        for q in query:
             try:
-                mol = Chem.inchi.MolFromInchi (v)
+                mol = Chem.inchi.MolFromInchi (q)
                 AllChem.Compute2DCoords(mol)
-                mol.SetProp(idname,n)
+                mol.SetProp(args.field,q)
                 writer.write(mol)
             except:
-                print 'error processing ', v
+                print('error processing ', v)
                 pass
         writer.close()
 
         return
 
     # for names convert to SMILES, in either case use MolFromSmiles
-    fo = open (out,'w+')     
-    for v,n in zip(vals,noms):
-        
-        if iformat == 'names':
-            print v,'\t', 
-            smi = urllib.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+v+'/smiles')
-            smi1 = smi.readline().rstrip()
-        else:
-            smi1 = v  
+    #for v,n in zip(vals,noms):
+    for q in query:
 
-        if smi1 and not ('Page not found' in smi1):
-            print smi1
-        else:
-            print 'error processing ', v
+        if args.identifier:
+            try:
+                smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+q+'/smiles')
+            except:
+                continue
+            smi1 = smi.readline().decode("utf-8").rstrip()
+        elif args.smiles:
+            smi1 = q
+
+        if smi1 == None or ('Page not found' in smi1):
             continue
         
         try:
             m = Chem.MolFromSmiles(smi1)
             Chem.AllChem.Compute2DCoords(m)
-            m.SetProp(idname,n)
         except:
-            print 'error processing', v
+            print('error processing', q)
             continue
             
+        m.SetProp("_Name",q)
         mb = Chem.MolToMolBlock(m)        
 
-        fo.write(mb)
-        
-        if iformat=='names':
-            fo.write('>  <name>\n'+v+'\n\n')
+        args.out.write(mb)
 
-        fo.write('>  <'+idname+'>\n'+n+'\n\n')
-        
-        fo.write('>  <smiles>\n'+smi1+'\n\n')
+        args.out.write('>  <'+args.field+'>\n'+q+'\n\n')
+        args.out.write('>  <smiles>\n'+smi1+'\n\n')
 
-        fo.write('$$$$\n')        
-    fo.close()
-
-def usage ():
-    """Prints in the screen the command syntax and argument"""
-    print 'getSDF -f|s|i input.csv [--id=molecule_id] [-o output.sdf]'
-    print '\n\t -f input.csv (molecules as names)'
-    print '\t -s input.csv (molecules as SMILES)'
-    print '\t -i input.csv (molecules as InChI)'
-    print '\t --id=molecule_id field where the unique id will be added)'
-    print '\t -o output.sdf (output SDFile)'
-
-    sys.exit(1)
+        args.out.write('$$$$\n')        
+    args.out.close()
 
 def main ():
-    out= 'output.sdf'
-    data = None
-    iformat = None
-    idname = 'name'
-    header = False
-    
-    try:
-       opts, args = getopt.getopt(sys.argv[1:],'f:s:i:o:', ['header','id='])
-    except getopt.GetoptError:
-        print "Arguments not recognized"
-        usage()
-    
-    if not len(opts):
-        print "Arguments not recognized"
-        usage()
 
-    if len(opts)>0:
-        for opt, arg in opts:
-            if opt in '-o':
-                out = arg
-            elif opt in '-f':
-                data = arg
-                iformat = 'names'
-            elif opt in '-s':
-                data = arg
-                iformat = 'smiles'
-            elif opt in '-i':
-                data = arg
-                iformat = 'inchis'
-            elif opt in '--id':
-                idname = arg
-            elif opt in '--header':
-                header = True
-
-    if not data: usage()
+    parser = argparse.ArgumentParser(description='Get the structure of the compounds in the input data file.')
+    parser.add_argument('-d', '--data', type=argparse.FileType('r'), required=True, help='File with molecule identifiers.')
+    parser.add_argument('-c', '--column', type=int, default=1, help='Column in the input file that contains the molecule identifiers (default= 1).')
+    parser.add_argument('-n', '--noheader', action='store_false', dest='header', help='Input data file doesn\'t have a header line.')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-x', '--identifier', action='store_true', help='The input format will be compound indentifiers.')
+    group.add_argument('-s', '--smi', action='store_true', help='The input format will be a smiles string.')
+    group.add_argument('-i', '--inchis', action='store_true', help='The input format will be molecule InChis.')
+    parser.add_argument('-f', '--field', type=str, default='name', help='Field in the output SD file that will contain the unique ID (default= name).')
+    parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.sdf', help='Output file name (default: output.sdf)')
+    args = parser.parse_args()
     
-    getSDF(out,data,iformat,idname,header)    
+    getSDF(args)    
 
 if __name__ == '__main__':    
     main()

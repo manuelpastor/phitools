@@ -33,9 +33,7 @@ def addInchi (args):
     # Read SDF
     suppl = Chem.SDMolSupplier(args.sdf.name,removeHs=False, sanitize=False)
 
-    # Create header
-    #fo = open(args.out,'w+')
-    
+    # Create header    
     for mol in suppl:
 
         if mol is None: continue
