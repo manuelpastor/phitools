@@ -55,7 +55,7 @@ def getStructure(args):
     noms = []
     args.data.readline()  # Header
     counter = 1
-    query = [line.rstrip().split('\t')[args.column-1] for line in args.data]
+    query = set([line.rstrip().split('\t')[args.column-1] for line in args.data])
     args.data.close()
 
     # for inchis use SDWriter
