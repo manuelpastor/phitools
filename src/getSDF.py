@@ -50,7 +50,7 @@ def getSDF(args):
                 mol.SetProp(args.field,q)
                 writer.write(mol)
             except:
-                print('error processing ', v)
+                print('error processing ', q)
                 pass
         writer.close()
 
