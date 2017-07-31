@@ -33,7 +33,7 @@ def splitSDF (sdf, prop, seed):
     try:
         f = open (sdf,'r')
     except:
-        print 'unable to open file ',sdf, 'ABORT'
+        print('unable to open file ',sdf, 'ABORT')
         exit(1)
         
     for line in f:
@@ -44,7 +44,7 @@ def splitSDF (sdf, prop, seed):
     ntrai = int(np.round(prop*nmols/100.0))
     npred = nmols - ntrai
     
-    print nmols, "compounds found. Creating series of ", ntrai, " for training and ", npred, " for prediction"
+    print(nmols, "compounds found. Creating series of ", ntrai, " for training and ", npred, " for prediction")
 
     if seed != None :
         npseed = int(seed)
@@ -72,7 +72,7 @@ def splitSDF (sdf, prop, seed):
 
 def usage ():
     """Prints in the screen the command syntax and argument"""
-    print 'randomSplitSDF -f file.sdf -p 70 [-s 2356]'
+    print('randomSplitSDF -f file.sdf -p 70 [-s 2356]')
     sys.exit(1)
 
 def main ():
@@ -85,11 +85,11 @@ def main ():
        opts, args = getopt.getopt(sys.argv[1:],'f:p:s:')
     except getopt.GetoptError:
        usage()
-       print "Error. Arguments not recognized"
+       print("Error. Arguments not recognized")
 
     if args:
        usage()
-       print "Error. Arguments not recognized"
+       print("Error. Arguments not recognized")
 
     if len(opts)>0:
         for opt, arg in opts:
@@ -101,13 +101,13 @@ def main ():
                 seed = arg
 
     if sdf==None or p==None:
-        print "Error. Missing arguments"
+        print("Error. Missing arguments")
         usage()
         
     try:
         prop = int(p)
     except:
-        print "Error. Proportion not an integer"
+        print("Error. Proportion not an integer")
         usage()
         
         

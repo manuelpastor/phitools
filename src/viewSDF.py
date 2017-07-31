@@ -90,7 +90,7 @@ def saveListAsHTML(l,out):
 
 def usage ():
     """Prints in the screen the command syntax and argument"""
-    print 'viewSDF [-f file.sdf] [-o output.html] [--name=name]'
+    print('viewSDF [-f file.sdf] [-o output.html] [--name=name]')
     sys.exit(1)
 
 def main ():
@@ -102,7 +102,7 @@ def main ():
        opts, args = getopt.getopt(sys.argv[1:],'f:o:', ['name='])
     except getopt.GetoptError:
        usage()
-       print "False, Arguments not recognized"
+       print("False, Arguments not recognized")
        sys.exit(1)
 
     if len(opts)>0:

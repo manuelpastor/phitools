@@ -28,46 +28,45 @@ import sys
 import argparse
 import re
 
-def addData (sdf_id, data_id, prop_id, out_id):
+sep = '\t'
 
+def addData (args):
+    #args.sdf, args.data, args.id, args.out
+    #sdf_id, data_id, cmpdID, out_id):
+
+    ###################
+    # Read data file
+    ###################
+    tags = args.data.readline().rstrip().split(sep) 
     vals = []
-    tags = []
-    prop_id=prop_id.replace(" ","") # delete whitespaces
-
-    ###################
-    # Read csv file
-    ###################
-    f = open (data_id)
-    for line in f:
-        line=line.rstrip()
-        line=line.split('\t')
-        if len(tags) == 0:
-            tags.append(line)            
-        else:
-            vals.append(line)            
-    f.close()   
+    for line in args.data:
+        line=line.rstrip().split(sep)
+        vals.append(line)            
+    args.data.close()  
 
     ###################
     # Search property #
     ###################
+
+    cmpdID = args.id.replace(" ","") # delete whitespaces in the compound identifier 
     
-    if not prop_id in tags[0]:        
-        for i in tags[0]:
-            match=re.search(prop_id[:5], i)
+    if not cmpdID in tags:        
+        for i in tags:
+            match=re.search(cmpdID[:5], i)
             if match:
-                print("Property descriptor not found, please try again. Similar property found:" + i)
+                sys.stderr.write("Property descriptor not found, please try again. Similar property found:" + i)
                 return
             else:
-                match=re.search(prop_id[len(prop_id)-5:], i)
+                match=re.search(cmpdID[len(cmpdID)-5:], i)
                 if match:
-                    print("Property descriptor not found, please try again. Similar property found:" + i)
+                    sys.stderr.write("Property descriptor not found, please try again. Similar property found:" + i)
                     return                
         #not found 
-        if i == tags[0][-1]:
-            print("property descriptor not found")
+        if i == tags[-1]:
+            sys.stderr.write("property descriptor not found")
             return
     else:
-        ind=tags[0].index(prop_id)
+        ind=tags.index(cmpdID)
         
     ###################
     # Process SDFile  #
@@ -87,18 +86,18 @@ def addData (sdf_id, data_id, prop_id, out_id):
         l = []
         for i in mol.GetPropNames():
             l.append(i)
-        if not prop_id in l: continue
+        if not cmpdID in l: continue
 
-        db_id=mol.GetProp(mol.GetPropNames()[l.index(prop_id)])
+        db_id=mol.GetProp(mol.GetPropNames()[l.index(cmpdID)])
 
         match = False
         for i in vals:
             if i[ind]==db_id:
                 match = True
                 for j in range(len(i)):                          
-                    fo.write('>  <'+tags[0][j]+'>\n'+i[j]+'\n\n')               
+                    fo.write('>  <'+tags[j]+'>\n'+i[j]+'\n\n')               
         if not match:
-            for t in tags[0]:                          
+            for t in tags:                          
                 fo.write('>  <'+t+'>\nna\n\n')  
 
         fo.write('$$$$\n')
@@ -113,11 +112,11 @@ def main ():
     parser = argparse.ArgumentParser(description='Add data from an input table into SD file fields. The data file must be a tab separated file with a single line header. One of the columns must contain a unique id, present also in the SDFile, which is used for the matching. This field can be specified using the parameter -i | --id.')
     parser.add_argument('-f', '--sdf', type=argparse.FileType('r'), help='SD file', required=True)
     parser.add_argument('-d', '--data', type=argparse.FileType('r'), help='Data file', required=True)
-    parser.add_argument('-i', '--id', type=str, help='moleculeID', required=True)
+    parser.add_argument('-i', '--id', type=str, help='moleculeID')
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.sdf', help='Output file name (default: output.sdf)')
     args = parser.parse_args()
 
-    addData(args.sdf, args.data, args.id, args.out)    
+    addData(args)    
 
 if __name__ == '__main__':    
     main()

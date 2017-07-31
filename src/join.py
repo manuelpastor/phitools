@@ -39,14 +39,14 @@ def join (fileA,fileB,key,out,soft):
     try:
         indexA = ha.index(key)
     except:
-        print 'key not fount in file '+fileA
+        print('key not fount in file '+fileA)
         sys.exit(1)
 
     hb = fb.readline().rstrip().split('\t')
     try:
         indexB = hb.index(key)
     except:
-        print 'key not fount in file '+fileB
+        print('key not fount in file '+fileB)
         sys.exit(1)
 
     
@@ -97,9 +97,9 @@ def join (fileA,fileB,key,out,soft):
  
 def usage ():
     """Prints in the screen the command syntax and argument"""
-    print 'join -a fileA.csv -b fileB.csv --id molecule_id [-o output.csv] [--soft]'
-    print '\n\tjoins fileA.csv and fileB.csv using as key the column labeled as indicated by the --id parameter'
-    print '\tthe --soft parameter is used when InChiKey based comparisons are performed, discaring the last 3 chars'
+    print('join -a fileA.csv -b fileB.csv --id molecule_id [-o output.csv] [--soft]')
+    print('\n\tjoins fileA.csv and fileB.csv using as key the column labeled as indicated by the --id parameter')
+    print('\tthe --soft parameter is used when InChiKey based comparisons are performed, discaring the last 3 chars')
     sys.exit(1)
 
 def main ():
@@ -113,7 +113,7 @@ def main ():
        opts, args = getopt.getopt(sys.argv[1:],'a:b:o:', ['id=', 'soft'])
     except getopt.GetoptError:
        usage()
-       print "False, Arguments not recognized"
+       print("False, Arguments not recognized")
        sys.exit(1)
 
     if len(opts)>0:
