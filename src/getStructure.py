@@ -28,22 +28,20 @@ import sys
 import argparse
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from SDFhelper import *
 
 def writeStructure(q, mol, args):
 
     if args.sdf:
-        if type(m, str):
+        if type(mol) is str:
             try:
                 mol = Chem.MolFromSmiles(mol)
                 Chem.AllChem.Compute2DCoords(mol)
             except:
-                print('error processing', q)
+                sys.stderr.write('error processing', q)
 
-        mol.SetProp("_Name", q)
-        mb = Chem.MolToMolBlock(mol)
-        args.out.write(mb)
-        args.out.write('>  <'+args.field+'>\n'+q+'\n\n')
-        args.out.write('$$$$\n')        
+        writeSDF(mol, args.out, {args.field: q}, q)
+        
     elif args.smi:
         args.out.write('{}\n'.format('\t'.join([q, mol])))
 
@@ -51,16 +49,13 @@ def writeStructure(q, mol, args):
 def getStructure(args):
     #out,data,iformat,idname,header):
 
-    vals = []
-    noms = []
-    args.data.readline()  # Header
-    counter = 1
-    query = set([line.rstrip().split('\t')[args.column-1] for line in args.data])
+    if args.header: args.data.readline()  # Skip header
+    queries = set([line.rstrip().split('\t')[args.column-1] for line in args.data])
     args.data.close()
 
-    # for inchis use SDWriter
+    # for inchis use RDKit to get the structure
     if args.inchis:
-        for q in query:
+        for q in queries:
             try:
                 mol = Chem.inchi.MolFromInchi (q)
                 AllChem.Compute2DCoords(mol)
@@ -69,9 +64,9 @@ def getStructure(args):
                 pass
             writeStructure(q, mol, args)
 
-    # for names convert to SMILES, in either case use MolFromSmiles
-    elif args.identifier:
-        for q in query:
+    # for names use CACTVS to retrieve the SMILES
+    else:
+        for q in queries:
             try:
                 smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+q+'/smiles')
                 smi = smi.readline().decode("utf-8").rstrip()
