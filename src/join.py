@@ -22,117 +22,95 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
-import os
-import sys
-import getopt
+import os, sys, argparse
 
-def join (fileA,fileB,key,out,soft):
+sep = '\t'
+
+def join (args):
 
     # Open files
-    fa = open (fileA,'r')
-    fb = open (fileB,'r')
-    fo = open (out,'w+')
+    if args.type == 'right':
+        fa = args.fileb
+        fb = args.filea     
+    else:   
+        # Left, inner or outer join
+        fa = args.filea
+        fb = args.fileb 
 
-    #identify key in both files
-    ha = fa.readline().rstrip().split('\t')
-    
+    # Identify key in both files
+    ha = fa.readline().decode("utf-8").rstrip().split('\t')
     try:
-        indexA = ha.index(key)
+        indexA = ha.index(args.key)
     except:
-        print('key not fount in file '+fileA)
+        sys.stderr.write('Key not fount in file '+fa.name)
         sys.exit(1)
 
-    hb = fb.readline().rstrip().split('\t')
+    hb = fb.readline().decode("utf-8").rstrip().split('\t')
     try:
-        indexB = hb.index(key)
+        indexB = hb.index(args.key)
     except:
-        print('key not fount in file '+fileB)
+        sys.stderr.write('Key not fount in file '+fb.name)
         sys.exit(1)
 
-    
-    vault = []
-    vIndex = []
-    # read file B in memory and index key
+    # Write header in the output file
+    header = ha[:]
+    del hb[indexB]
+    header.extend(hb)
+    args.out.write('{}\n'.format(sep.join(header)))
+
+    # Read the second file in memory and index key
+    vIndex = {}
     for line in fb:
-        linelist = line.rstrip().split('\t')
-        lineraw = ''
+        linelist = line.rstrip().decode("utf-8").split('\t')
+        lineraw = []
         for i in range(len(linelist)):
             value = linelist[i]
             if i!=indexB:
-                lineraw+='\t'+value
+                lineraw.append(value)
             else:
-                if soft: value = value[:-3]
-                vIndex.append(value)
-        vault.append(lineraw)
+                if args.soft: key = value[:-3]
+                else: key = value
+        vIndex[key] = '{}'.format(sep.join(lineraw))
     fb.close()
     
-    j=0
-
-    #write header
-    for i in ha:
-        fo.write (i+'\t')
-        
-    for i in hb:
-        if i!=key:
-            fo.write (i+'\t')
-    fo.write('\n')
-    
-    # read file A
+    # Read the first file
     for line in fa:
-        line = line.rstrip()
+        line = line.decode("utf-8").rstrip()
         linelist = line.split('\t')
         k = linelist[indexA]
-        if soft: k = k[:-3]
-        try:
-            j = vIndex.index(k)
-        except:
+        if args.soft: k = k[:-3]
+        if k not in vIndex:
+            if args.type != 'inner':
+                args.out.write('{}\n'.format(line))
             continue
-        
-        fo.write(line)
-        fo.write(vault[j]) # vault elements start with a tab
-        fo.write('\n')
-        
+        args.out.write('{}\n'.format(sep.join([line, vIndex[k]])))
+        del vIndex[k]        
     fa.close()
-    fo.close()
- 
-def usage ():
-    """Prints in the screen the command syntax and argument"""
-    print('join -a fileA.csv -b fileB.csv --id molecule_id [-o output.csv] [--soft]')
-    print('\n\tjoins fileA.csv and fileB.csv using as key the column labeled as indicated by the --id parameter')
-    print('\tthe --soft parameter is used when InChiKey based comparisons are performed, discaring the last 3 chars')
-    sys.exit(1)
+
+    if args.type == 'outer':
+        for key in vIndex:
+            # For lines in B that weren't found in A fill in the fields corresponding to the first line's header.
+            line = '{}'.format(sep.join(['' if i != indexA else key for i in range(len(ha))]))
+            args.out.write('{}\n'.format(sep.join([line, vIndex[key]])))
+
+    args.out.close()
 
 def main ():
-    fileA = None
-    fileB = None
-    key = None
-    out = 'output.csv'
-    soft = False
-    
-    try:
-       opts, args = getopt.getopt(sys.argv[1:],'a:b:o:', ['id=', 'soft'])
-    except getopt.GetoptError:
-       usage()
-       print("False, Arguments not recognized")
-       sys.exit(1)
 
-    if len(opts)>0:
-        for opt, arg in opts:
-            if opt in '-a':
-                fileA = arg
-            elif opt in '-b':
-                fileB = arg
-            elif opt in '-o':
-                out = arg
-            elif opt in '--id':
-                key = arg
-            elif opt in '--soft':
-                soft = True
-                
-    if fileA is None or fileB is None or key is None:
-        usage()
+    parser = argparse.ArgumentParser(description='Joins the two input files using the column label indicated by the --id parameter as a key. The --soft parameter is used when InChiKey based comparisons are performed, discarding the last 3 chars. By default it performs a left join, but you can also chose right or inner join.')
+    parser.add_argument('-a', '--filea', type=argparse.FileType('rb'), help='First file to join.', required=True)
+    parser.add_argument('-b', '--fileb', type=argparse.FileType('rb'), help='Second file to join.', required=True)
+    parser.add_argument('-f', '--field', type=str, dest='key', help='Name of the field to be used as a common key.', required=True)
+    parser.add_argument('-s', '--soft', action='store_true', help='When InChiKey based comparisons are performed, discard the last 3 chars.')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-l', '--left', action='store_const', dest='type', const='left', default='left', help='Left join.')
+    group.add_argument('-r', '--right', action='store_const', dest='type', const='right', help='Right join.')
+    group.add_argument('-i', '--inner', action='store_const', dest='type', const='inner', help='Inner join.')
+    group.add_argument('-x', '--outer', action='store_const', dest='type', const='outer', help='Inner join.')
+    parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.tsv', help='Output file name (default: output.tsv)')
+    args = parser.parse_args()
 
-    join (fileA, fileB, key, out, soft)
+    join (args)
 
 if __name__ == '__main__':    
     main()
