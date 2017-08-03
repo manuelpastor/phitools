@@ -97,13 +97,13 @@ def join (args):
 
 def main ():
 
-    parser = argparse.ArgumentParser(description='Joins the two input files using the column label indicated by the --id parameter as a key. The --soft parameter is used when InChiKey based comparisons are performed, discarding the last 3 chars. By default it performs a left join, but you can also chose right or inner join.')
+    parser = argparse.ArgumentParser(description='Joins the two input files using the column label indicated by the --id parameter as a key. The --soft parameter is used when InChiKey based comparisons are performed, discarding the last 3 chars. By default it performs a left join, but you can also chose right, inner, or outer join.')
     parser.add_argument('-a', '--filea', type=argparse.FileType('rb'), help='First file to join.', required=True)
     parser.add_argument('-b', '--fileb', type=argparse.FileType('rb'), help='Second file to join.', required=True)
     parser.add_argument('-f', '--field', type=str, dest='key', help='Name of the field to be used as a common key.', required=True)
     parser.add_argument('-s', '--soft', action='store_true', help='When InChiKey based comparisons are performed, discard the last 3 chars.')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-l', '--left', action='store_const', dest='type', const='left', default='left', help='Left join.')
+    group.add_argument('-l', '--left', action='store_const', dest='type', const='left', default='left', help='Left join (default).')
     group.add_argument('-r', '--right', action='store_const', dest='type', const='right', help='Right join.')
     group.add_argument('-i', '--inner', action='store_const', dest='type', const='inner', help='Inner join.')
     group.add_argument('-x', '--outer', action='store_const', dest='type', const='outer', help='Inner join.')
