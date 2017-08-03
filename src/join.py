@@ -106,7 +106,7 @@ def main ():
     group.add_argument('-l', '--left', action='store_const', dest='type', const='left', default='left', help='Left join (default).')
     group.add_argument('-r', '--right', action='store_const', dest='type', const='right', help='Right join.')
     group.add_argument('-i', '--inner', action='store_const', dest='type', const='inner', help='Inner join.')
-    group.add_argument('-x', '--outer', action='store_const', dest='type', const='outer', help='Inner join.')
+    group.add_argument('-x', '--outer', action='store_const', dest='type', const='outer', help='Outer join.')
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.tsv', help='Output file name (default: output.tsv)')
     args = parser.parse_args()
 
