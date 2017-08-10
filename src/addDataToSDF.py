@@ -40,16 +40,16 @@ def addData (args):
         for col in header:
             match=re.search(IDfield[:5], col)
             if match:
-                sys.stderr.write("Molecule identifier not found among data file\'s column names, please try again. However, a similar column name was found:" + col)
+                sys.stderr.write("Molecule identifier not found among data file\'s column names, please try again. However, a similar column name was found: {}\n".format(col))
                 return
             else:
                 match=re.search(IDfield[len(IDfield)-5:], col)
                 if match:
-                    sys.stderr.write("Molecule identifier not found among data file\'s column names, please try again. However, a similar column name was found:" + col)
+                    sys.stderr.write("Molecule identifier not found among data file\'s column names, please try again. However, a similar column name was found: {}\n".format(col))
                     return                
         #not found 
         if col == header[-1]:
-            sys.stderr.write("Molecule identifier not found among data file\'s column names.")
+            sys.stderr.write("Molecule identifier not found among data file\'s column names.\n")
             return
     else:
         ind=header.index(IDfield)
@@ -67,11 +67,13 @@ def addData (args):
     # Process SDFile  #
     ###################
   
-    suppl = Chem.SDMolSupplier(args.sdf.name, removeHs=False, sanitize=False)
-    sys.stdout.write("Input file has {} molecules\n".format(len(suppl)))
-    
+    suppl = Chem.ForwardSDMolSupplier(args.sdf, removeHs=False, sanitize=False)
+
+    inL = 0
+    outL = 0    
     for mol in suppl:
-    
+
+        inL += 1
         if mol is None: continue
             
         propD = getProperties(mol)
@@ -85,6 +87,7 @@ def addData (args):
             for field in dataD[cmpdID]:
                 if field not in propD:
                     propD[field] = 'NA'
+            outL += 1
             writeSDF(mol, args.out, propD, ID=cmpdID)
         else:
             # Add field values from the data file
@@ -93,22 +96,23 @@ def addData (args):
                 if field in propD:
                     field = field+' (1)'
                 propD[field] = fieldValue
+            outL += 1
             writeSDF(mol, args.out, propD, ID=cmpdID)
         
+    args.sdf.close()
     args.out.close()
     
-    suppl = Chem.SDMolSupplier(args.out.name)
-    sys.stdout.write("Output file has {} molecules\n".format(len(suppl)))
+    sys.stdout.write("Input file has {} molecules\n".format(inL))
+    sys.stdout.write("Output file has {} molecules\n".format(outL))
 
 def main ():
 
     parser = argparse.ArgumentParser(description='Add data from an input table into SD file fields. The data file must be a tab separated file with a single line header. One of the columns must contain a unique id, present also in the SDFile, which is used for the matching. This field can be specified using the parameter -i | --id.')
-    parser.add_argument('-f', '--sdf', type=argparse.FileType('r'), help='SD file', required=True)
+    parser.add_argument('-f', '--sdf', type=argparse.FileType('rb'), help='SD file', required=True)
     parser.add_argument('-d', '--data', type=argparse.FileType('r'), help='Data file', required=True)
     parser.add_argument('-i', '--id', type=str, help='Field containing the moleculeID. If the field is not found in the SD file, the molecule name will be used instead.')
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.sdf', help='Output file name (default: output.sdf)')
     args = parser.parse_args()
-    args.sdf.close()
 
     addData(args)    
 
