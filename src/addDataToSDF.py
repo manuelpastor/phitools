@@ -23,98 +23,92 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
-import os
-import sys
-import argparse
-import re
+import os, sys, re, argparse
+from SDFhelper import *
 
 sep = '\t'
 
 def addData (args):
-    #args.sdf, args.data, args.id, args.out
-    #sdf_id, data_id, cmpdID, out_id):
+    
+    IDfield = args.id.replace(" ","") # delete whitespaces in the compound identifier 
+
+    ##############################################
+    # Search compound ID column in the data file #
+    ##############################################
+    header = args.data.readline().rstrip().split(sep)  
+    if not IDfield in header:        
+        for col in header:
+            match=re.search(IDfield[:5], col)
+            if match:
+                sys.stderr.write("Molecule identifier not found among data file\'s column names, please try again. However, a similar column name was found:" + col)
+                return
+            else:
+                match=re.search(IDfield[len(IDfield)-5:], col)
+                if match:
+                    sys.stderr.write("Molecule identifier not found among data file\'s column names, please try again. However, a similar column name was found:" + col)
+                    return                
+        #not found 
+        if col == header[-1]:
+            sys.stderr.write("Molecule identifier not found among data file\'s column names.")
+            return
+    else:
+        ind=header.index(IDfield)
 
     ###################
     # Read data file
     ###################
-    tags = args.data.readline().rstrip().split(sep) 
-    vals = []
+    dataD = {}
     for line in args.data:
         line=line.rstrip().split(sep)
-        vals.append(line)            
+        dataD[line[ind]] = {header[i]:line[i] for i in range(len(header)) if i != ind}      
     args.data.close()  
-
-    ###################
-    # Search property #
-    ###################
-
-    cmpdID = args.id.replace(" ","") # delete whitespaces in the compound identifier 
-    
-    if not cmpdID in tags:        
-        for i in tags:
-            match=re.search(cmpdID[:5], i)
-            if match:
-                sys.stderr.write("Property descriptor not found, please try again. Similar property found:" + i)
-                return
-            else:
-                match=re.search(cmpdID[len(cmpdID)-5:], i)
-                if match:
-                    sys.stderr.write("Property descriptor not found, please try again. Similar property found:" + i)
-                    return                
-        #not found 
-        if i == tags[-1]:
-            sys.stderr.write("property descriptor not found")
-            return
-    else:
-        ind=tags.index(cmpdID)
         
     ###################
     # Process SDFile  #
     ###################
   
-    suppl = Chem.SDMolSupplier(sdf_id, removeHs=False, sanitize=False)
-    print("Input file has",len(suppl),"molecules")
-    fo = open (out_id,'w+')
+    suppl = Chem.SDMolSupplier(args.sdf.name, removeHs=False, sanitize=False)
+    sys.stdout.write("Input file has {} molecules\n".format(len(suppl)))
     
     for mol in suppl:
     
         if mol is None: continue
-
-        # Add MolBlock
-        fo.write(Chem.MolToMolBlock(mol, kekulize=False))
-
-        l = []
-        for i in mol.GetPropNames():
-            l.append(i)
-        if not cmpdID in l: continue
-
-        db_id=mol.GetProp(mol.GetPropNames()[l.index(cmpdID)])
-
-        match = False
-        for i in vals:
-            if i[ind]==db_id:
-                match = True
-                for j in range(len(i)):                          
-                    fo.write('>  <'+tags[j]+'>\n'+i[j]+'\n\n')               
-        if not match:
-            for t in tags:                          
-                fo.write('>  <'+t+'>\nna\n\n')  
-
-        fo.write('$$$$\n')
+            
+        propD = getProperties(mol)
+        if IDfield not in propD.keys():
+            cmpdID = getName(mol)
+        else:
+            cmpdID = mol.GetProp(IDfield)
+            
+        if cmpdID not in dataD:
+            # Add empty fields
+            for field in dataD[cmpdID]:
+                if field not in propD:
+                    propD[field] = 'NA'
+            writeSDF(mol, args.out, propD, ID=cmpdID)
+        else:
+            # Add field values from the data file
+            for field in dataD[cmpdID]:
+                fieldValue = dataD[cmpdID][field]
+                if field in propD:
+                    field = field+' (1)'
+                propD[field] = fieldValue
+            writeSDF(mol, args.out, propD, ID=cmpdID)
         
-    fo.close()
+    args.out.close()
     
-    suppl1 = Chem.SDMolSupplier(out_id)
-    print("Output file has",len(suppl1),"molecules")
+    suppl = Chem.SDMolSupplier(args.out.name)
+    sys.stdout.write("Output file has {} molecules\n".format(len(suppl)))
 
 def main ():
 
     parser = argparse.ArgumentParser(description='Add data from an input table into SD file fields. The data file must be a tab separated file with a single line header. One of the columns must contain a unique id, present also in the SDFile, which is used for the matching. This field can be specified using the parameter -i | --id.')
     parser.add_argument('-f', '--sdf', type=argparse.FileType('r'), help='SD file', required=True)
     parser.add_argument('-d', '--data', type=argparse.FileType('r'), help='Data file', required=True)
-    parser.add_argument('-i', '--id', type=str, help='moleculeID')
+    parser.add_argument('-i', '--id', type=str, help='Field containing the moleculeID. If the field is not found in the SD file, the molecule name will be used instead.')
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.sdf', help='Output file name (default: output.sdf)')
     args = parser.parse_args()
+    args.sdf.close()
 
     addData(args)    
 
