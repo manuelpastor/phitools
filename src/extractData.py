@@ -25,12 +25,6 @@ import os, sys, argparse
 from rdkit import Chem
 from SDFhelper import *
 
-def molName(mol, count=1):
-    name = mol.GetProp('_Name')
-    if name == '':
-        name = 'mol%0.8d'%count
-    return name
-
 def extractAll (args):
 
     fields = set()
@@ -44,7 +38,7 @@ def extractAll (args):
         if m is None: continue
         count += 1
         fields = fields.union(set(m.GetPropNames())) # Store all field names in the SD file
-        name = molName(m, count)
+        name = getName(m, count)
         bufferD[name] = getProperties(m)
         names.append(name)
 
@@ -74,7 +68,7 @@ def extractField (args):
     for m in suppl:
         if m is None: continue
         count += 1
-        name = molName(m, count)
+        name = getName(m, count)
         if m.HasProp (args.field):
             value = m.GetProp(args.field)
         else:
@@ -87,7 +81,7 @@ def extractNames (args):
     for m in suppl:
         if m is None: continue
         count +=1
-        name = molName(m, count)
+        name = getName(m, count)
         args.out.write('{}\n'.format(name))
 
 
