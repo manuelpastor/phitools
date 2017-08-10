@@ -24,9 +24,8 @@
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-import os
-import sys
-import argparse
+from SDFhelper import *
+import os, sys, argparse
 
 def addInchi (args):
 
@@ -39,26 +38,14 @@ def addInchi (args):
         if mol is None: continue
         
         args.out.write(Chem.MolToMolBlock(mol,kekulize=False))
-
-        pnames = []
-        for i in mol.GetPropNames():
-            pnames.append(i)
-
-        pvalues = []
-        for i in pnames:
-            pvalues.append(mol.GetProp(i))
-            
-        for pn,pv in zip(pnames,pvalues):        
-            args.out.write('>  <'+pn+'>\n'+pv+'\n\n')
-
-        inchi = 'na'
-        inkey = 'na'
+        writeProperties(args.out, getProperties(mol))
 
         try:
             inchi = Chem.MolToInchi(mol)
             inkey = Chem.InchiToInchiKey(inchi)
         except:
-            pass
+            inchi = 'na'
+            inkey = 'na'
 
         if inchi is None : inchi='na'
         if inkey is None : inkey='na'
@@ -75,6 +62,7 @@ def main ():
     parser.add_argument('-f', '--sdf', type=argparse.FileType('r'), help='SD file', required=True)
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.sdf', help='Output SD file name (default: output.sdf)')
     args = parser.parse_args()
+    args.sdf.close()
 
     addInchi (args)
 
