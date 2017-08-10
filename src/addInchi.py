@@ -30,7 +30,7 @@ import os, sys, argparse
 def addInchi (args):
 
     # Read SDF
-    suppl = Chem.SDMolSupplier(args.sdf.name,removeHs=False, sanitize=False)
+    suppl = Chem.ForwardSDMolSupplier(args.sdf,removeHs=False, sanitize=False)
 
     # Create header    
     for mol in suppl:
@@ -46,23 +46,21 @@ def addInchi (args):
         except:
             inchi = 'na'
             inkey = 'na'
-
         if inchi is None : inchi='na'
         if inkey is None : inkey='na'
 
         args.out.write('>  <inchi>\n'+inchi+'\n\n')
         args.out.write('>  <inchikey>\n'+inkey+'\n\n')
-
         args.out.write('$$$$\n')
 
+    args.sdf.close()
     args.out.close()
 
 def main ():
     parser = argparse.ArgumentParser(description='Add Inchi into a field for each molecule in the input SD file.')
-    parser.add_argument('-f', '--sdf', type=argparse.FileType('r'), help='SD file', required=True)
+    parser.add_argument('-f', '--sdf', type=argparse.FileType('rb'), help='SD file', required=True)
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.sdf', help='Output SD file name (default: output.sdf)')
     args = parser.parse_args()
-    args.sdf.close()
 
     addInchi (args)
 
