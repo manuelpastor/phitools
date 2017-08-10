@@ -35,8 +35,8 @@ def extractAll (args):
     count = 0
     # Get all information in SD file
     for m in suppl:
-        if m is None: continue
         count += 1
+        if m is None: continue
         fields = fields.union(set(m.GetPropNames())) # Store all field names in the SD file
         name = getName(m, count)
         bufferD[name] = getProperties(m)
@@ -66,8 +66,8 @@ def extractField (args):
     suppl=Chem.ForwardSDMolSupplier(args.sdf)
     count = 0
     for m in suppl:
-        if m is None: continue
         count += 1
+        if m is None: continue
         name = getName(m, count)
         if m.HasProp (args.field):
             value = m.GetProp(args.field)
@@ -79,8 +79,8 @@ def extractNames (args):
     suppl=Chem.ForwardSDMolSupplier(args.sdf)
     count = 0
     for m in suppl:
-        if m is None: continue
         count +=1
+        if m is None: continue
         name = getName(m, count)
         args.out.write('{}\n'.format(name))
 
