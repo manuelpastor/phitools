@@ -21,64 +21,74 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
-import os
-import sys
-import argparse
+import os, sys, argparse
 from rdkit import Chem
+from SDFhelper import *
 
-def molName(mol, count):
-    name = ''
-    if mol.HasProp ('name'):
-        name = mol.GetProp('name')
-    if not name:
-        name = mol.GetProp('_Name')
-    if not name:
+def molName(mol, count=1):
+    name = mol.GetProp('_Name')
+    if name == '':
         name = 'mol%0.8d'%count
     return name
-
-def extractNames (args):
-    suppl=Chem.SDMolSupplier(args.sdf.name)
-    count = 1
-    for m in suppl:
-        name = molName(m, count)
-        count +=1
-        args.out.write('{}\n'.format(name))
-
-def extractField (args):
-    suppl=Chem.SDMolSupplier(args.sdf.name)
-    for m in suppl:
-        if m.HasProp (args.field):
-            value = m.GetProp(args.field)
-        else:
-            value = 'NA'
-        args.out.write('{}\n'.format(value))
 
 def extractAll (args):
 
     fields = set()
     # Cycle through all molecules to make sure all field names are stored
-    suppl = Chem.SDMolSupplier(args.sdf.name)
+    suppl = Chem.ForwardSDMolSupplier(args.sdf)
+    bufferD = {}
+    names = []  # Store names on a list to preserve the order in the SD file
+    count = 0
+    # Get all information in SD file
     for m in suppl:
         if m is None: continue
-        fields = fields.union(set(m.GetPropNames()))
+        count += 1
+        fields = fields.union(set(m.GetPropNames())) # Store all field names in the SD file
+        name = molName(m, count)
+        bufferD[name] = getProperties(m)
+        names.append(name)
+
     fields = list(fields)
-    header = ['ID']
+    header = ['Name']
     header.extend(fields)
     args.out.write('{}\n'.format('\t'.join(header)))
     
-    suppl = Chem.SDMolSupplier(args.sdf.name)
-    count = 1
-    for m in suppl:
-        if m is None: continue
-        line = [molName(m, count)]
+    suppl = Chem.ForwardSDMolSupplier(args.sdf)
+    for name in names:
+        line = [name]
         for field in fields:
-            if m.HasProp (field):
-                value = m.GetProp(field)
+            if field in bufferD[name]:
+                value = bufferD[name][field]
             else:
                 value = 'NA'
-            line.append(value)
+            line.append(str(value))
         args.out.write('{}\n'.format('\t'.join(line)))
+
+def extractField (args):
+    # Write header in output file
+    args.out.write('{}\n'.format('\t'.join(['Name', args.field])))
+
+    # Get data and print to output file
+    suppl=Chem.ForwardSDMolSupplier(args.sdf)
+    count = 0
+    for m in suppl:
+        if m is None: continue
         count += 1
+        name = molName(m, count)
+        if m.HasProp (args.field):
+            value = m.GetProp(args.field)
+        else:
+            value = 'NA'
+        args.out.write('{}\n'.format('\t'.join([name, value])))
+
+def extractNames (args):
+    suppl=Chem.ForwardSDMolSupplier(args.sdf)
+    count = 0
+    for m in suppl:
+        if m is None: continue
+        count +=1
+        name = molName(m, count)
+        args.out.write('{}\n'.format(name))
 
 
 def main ():
@@ -86,12 +96,11 @@ def main ():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-i', '--sdf', type=argparse.FileType('rb'), help='SD file', required=True)
     group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-a', '--all', action='store_true', help='Extract data in all fields (default).')
     group.add_argument('-f', '--field', type=str, help='Extract only the data in this field of the SD file.')
-    group.add_argument('-a', '--all', action='store_true', help='Extract data in all fields.')
     group.add_argument('-n', '--name', action='store_true', help='Extract molecule names.')
-    parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.tsv', help='Output file name (default: output.tsv)')
+    parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.txt', help='Output file name (default: output.txt)')
     args = parser.parse_args()
-    args.sdf.close()
 
     if args.name:
         extractNames (args)
@@ -100,6 +109,7 @@ def main ():
     else:
         extractAll (args)
 
+    args.sdf.close()
     args.out.close()
     
         
