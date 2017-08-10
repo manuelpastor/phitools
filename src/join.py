@@ -38,14 +38,14 @@ def join (args):
         fb = args.fileb 
 
     # Identify key in both files
-    ha = fa.readline().decode("utf-8").rstrip().split('\t')
+    ha = fa.readline().decode("utf-8").rstrip().split(sep)
     try:
         indexA = ha.index(args.key)
     except:
         sys.stderr.write('Key not fount in file '+fa.name)
         sys.exit(1)
 
-    hb = fb.readline().decode("utf-8").rstrip().split('\t')
+    hb = fb.readline().decode("utf-8").rstrip().split(sep)
     try:
         indexB = hb.index(args.key)
     except:
@@ -61,7 +61,7 @@ def join (args):
     # Read the second file in memory and index key
     vIndex = {}
     for line in fb:
-        linelist = line.rstrip().decode("utf-8").split('\t')
+        linelist = line.rstrip().decode("utf-8").split(sep)
         lineraw = []
         for i in range(len(linelist)):
             value = linelist[i]
@@ -76,7 +76,7 @@ def join (args):
     # Read the first file
     for line in fa:
         line = line.decode("utf-8").rstrip()
-        linelist = line.split('\t')
+        linelist = line.split(sep)
         k = linelist[indexA]
         if args.soft: k = k[:-3]
         if k not in vIndex:
@@ -89,7 +89,7 @@ def join (args):
 
     if args.type == 'outer':
         for key in vIndex:
-            # For lines in B that weren't found in A fill in the fields corresponding to the first line's header.
+            # For lines in B that weren't found in A fill in the fields corresponding to the first file's header.
             line = '{}'.format(sep.join(['' if i != indexA else key for i in range(len(ha))]))
             args.out.write('{}\n'.format(sep.join([line, vIndex[key]])))
 
@@ -97,7 +97,7 @@ def join (args):
 
 def main ():
 
-    parser = argparse.ArgumentParser(description='Joins the two input files using the column label indicated as a key. The --soft parameter is used when InChiKey based comparisons are performed, discarding the last 3 chars. By default it performs a left join, but you can also chose right, inner, or outer join.')
+    parser = argparse.ArgumentParser(description='Joins the two input files using the column label indicated as a key. The --soft parameter is used when InChiKey-based comparisons are performed, discarding the last 3 chars. By default it performs a left join, but you can also chose right, inner, or outer join.')
     parser.add_argument('-a', '--filea', type=argparse.FileType('rb'), help='First file to join.', required=True)
     parser.add_argument('-b', '--fileb', type=argparse.FileType('rb'), help='Second file to join.', required=True)
     parser.add_argument('-f', '--field', type=str, dest='key', help='Name of the field to be used as a common key.', required=True)
