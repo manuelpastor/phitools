@@ -3,12 +3,19 @@
 import os, sys, argparse, re
 from rdkit import Chem
 
-def getName(mol):
-    return mol.GetProp("_Name")
+def getName(mol, count=1):
+    name = mol.GetProp('_Name')
+    if name == '':
+        name = 'mol%0.8d'%count
+    return name
     
 def setName(mol, ID):
     mol.SetProp("_Name", ID)
     return mol
+
+def getProperties(mol):
+    propD = mol.GetPropsAsDict()
+    return propD
 
 def writeProperties(fh, propD):
     for prop in propD:
