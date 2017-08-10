@@ -25,68 +25,62 @@
 from rdkit import Chem
 from rdkit import RDLogger
 from rdkit.Chem import AllChem,Draw,Descriptors
-import os
-import sys
-import argparse
+from SDFhelper import *
+import os, sys, argparse
 
 def findDuplicates (args): #sdf, name, out):
 
     lg = RDLogger.logger()
     lg.setLevel(RDLogger.ERROR)
     
-    suppl = Chem.SDMolSupplier(args.sdf.name,removeHs=False, sanitize=False)
+    suppl = Chem.ForwardSDMolSupplier(args.sdf,removeHs=False, sanitize=False)
 
     idlist = []
     nmlist = []
     smlist = []
 
-    print('reading SDFile...')
+    sys.stdout.write('reading SDFile...\n')
     counter = 0
     for mol in suppl:
-
         counter+=1
         
         if mol is None: continue
         try:
             inchi = Chem.MolToInchi(mol)
             inkey = Chem.InchiToInchiKey(inchi)
-            smile = Chem.MolToSmiles(mol)
+            smiles = Chem.MolToSmiles(mol)
         except:
             continue
 
-        try:
-            ni = mol.GetProp(args.name)
-        except:
-            ni = 'mol%0.8d' %counter
+        name = getName(mol, counter)
 
         idlist.append(inkey[:-3])
-        nmlist.append(ni)
-        smlist.append(smile)
+        nmlist.append(name)
+        smlist.append(smiles)
+    args.sdf.close()
     
     n = len(idlist)
 
-    print('analizing duplicates...')
+    sys.stdout.write('analizing duplicates...\n')
 
-    args.out.write('i\tj\tnamei\tnamej\tsmilesi\tsmilesj\n')
+    args.out.write('{}\n'.format('\t'.join(['i', 'j', 'namei', 'namej', 'smilesi', 'smilesj'])))  # Header
     duplicates = 0
     for i in range (n):
         for j in range (i+1,n):
             if idlist[i]==idlist[j]:
-                line=str(i)+'\t'+str(j)+'\t'+nmlist[i]+'\t'+nmlist[j]+'\t'+smlist[i]+'\t'+smlist[j]
-                args.out.write(line+'\n')
+                args.out.write('{}\n'.format('\t'.join([str(i), str(j), nmlist[i], nmlist[j], smlist[i], smlist[j]])))
                 duplicates+=1
     args.out.close()
 
-    print('\n%d duplicate molecules found' %duplicates)
+    sys.stdout.write('\n%d duplicate molecules found\n' %duplicates)
 
 def main ():
 
     parser = argparse.ArgumentParser(description='Find duplicated molecules. In the output file, the first columns present the properties of the first molecule duplicated, the last columns contain data about the second molecule identified.')
-    parser.add_argument('-f', '--sdf', type=argparse.FileType('r'), help='SD file', required=True)
+    parser.add_argument('-f', '--sdf', type=argparse.FileType('rb'), help='SD file', required=True)
     parser.add_argument('-i', '--id', type=str, default='database_substance_id', help='moleculeID')
-    parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.sdf', help='Output file name (default: output.sdf)')
+    parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='duplicates.txt', help='Output file name (default: duplicates.txt)')
     args = parser.parse_args()
-    args.sdf.close()
 
     findDuplicates(args)
     
