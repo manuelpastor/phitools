@@ -28,36 +28,66 @@ from rdkit.Chem import AllChem,Draw,Descriptors
 from SDFhelper import *
 import os, sys, argparse
 
-def findDuplicates (args): #sdf, name, out):
+sep = '\t'
+
+def findDuplicates (args): 
 
     lg = RDLogger.logger()
     lg.setLevel(RDLogger.ERROR)
-    
-    suppl = Chem.ForwardSDMolSupplier(args.sdf,removeHs=False, sanitize=False)
 
     idlist = []
     nmlist = []
     smlist = []
 
-    sys.stdout.write('reading SDFile...\n')
     counter = 0
-    for mol in suppl:
-        counter+=1
+    if args.type == 'smi':  
+        sys.stdout.write('reading file with smiles...\n')
+        if args.header:
+            args.fn.readline()
+        for line in args.fn:
+            fields = line.decode('utf-8').rstrip().split(sep)
+            smiles = fields[args.col]
+            mol = Chem.MolFromSmiles(smiles)
+            counter+=1
+
+            if mol is None: continue
+            try:
+                inchi = Chem.MolToInchi(mol)
+                inkey = Chem.InchiToInchiKey(inchi)
+            except:
+                continue
+
+            name = fields[args.id]
+
+            idlist.append(inkey[:-3])
+            nmlist.append(name)
+            smlist.append(smiles)
+
+    else:
+        # SD file
+        sys.stdout.write('reading SDFile...\n')
+        suppl = Chem.ForwardSDMolSupplier(args.fn,removeHs=False, sanitize=False)
+
+        for mol in suppl:
+            counter+=1
         
-        if mol is None: continue
-        try:
-            inchi = Chem.MolToInchi(mol)
-            inkey = Chem.InchiToInchiKey(inchi)
-            smiles = Chem.MolToSmiles(mol)
-        except:
-            continue
+            if mol is None: continue
+            try:
+                inchi = Chem.MolToInchi(mol)
+                inkey = Chem.InchiToInchiKey(inchi)
+                smiles = Chem.MolToSmiles(mol)
+            except:
+                continue
 
-        name = getName(mol, counter)
+            if args.id:
+                name = mol.getProp(args.id)
+            else:
+                name = getName(mol, counter)
 
-        idlist.append(inkey[:-3])
-        nmlist.append(name)
-        smlist.append(smiles)
-    args.sdf.close()
+            idlist.append(inkey[:-3])
+            nmlist.append(name)
+            smlist.append(smiles)
+    args.fn.close()
     
     n = len(idlist)
 
@@ -77,10 +107,22 @@ def findDuplicates (args): #sdf, name, out):
 def main ():
 
     parser = argparse.ArgumentParser(description='Find duplicated molecules. In the output file, the first columns present the properties of the first molecule duplicated, the last columns contain data about the second molecule identified.')
-    parser.add_argument('-f', '--sdf', type=argparse.FileType('rb'), help='SD file', required=True)
+    parser.add_argument('-f', '--fn', type=argparse.FileType('rb'), help='SD file', required=True)
     parser.add_argument('-i', '--id', type=str, default='database_substance_id', help='moleculeID')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-s', '--smi', action='store_const', dest='type', const='smi', default='smi', help='The input format is a file with smiles strings (default).')
+    group.add_argument('-m', '--sdf', action='store_const', dest='type', const='sdf', help='The input format is an SD file.')
+    parser.add_argument('-c', '--col', type=int, default=1, help='If the input file is a data file with smiles strings, indicate which column contains the smiles.')
+    parser.add_argument('-n', '--noheader', action='store_false', dest='header', help='Input data file doesn\'t have a header line.')
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='duplicates.txt', help='Output file name (default: duplicates.txt)')
     args = parser.parse_args()
+
+    if args.type == 'smi':
+        try:
+            args.id = int(args.id)
+        except:
+            sys.stderr.write('If the input file has smiles string, the id field (-i) must contain the index of the column with the comound identifier.\n')
+            sys.exit()
 
     findDuplicates(args)
     
