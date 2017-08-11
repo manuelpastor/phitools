@@ -54,23 +54,29 @@ def join (args):
 
     # Write header in the output file
     header = ha[:]
-    del hb[indexB]
-    header.extend(hb)
+    tmp = hb[:]
+    del tmp[indexB]
+    header.extend(tmp)
     args.out.write('{}\n'.format(sep.join(header)))
 
     # Read the second file in memory and index key
     vIndex = {}
     for line in fb:
-        linelist = line.rstrip().decode("utf-8").split(sep)
+        linelist = line.decode("utf-8").rstrip().split(sep)
+        
+        if args.soft: key = linelist[indexB][:-3]
+        else: key = linelist[indexB]
+        
         lineraw = []
-        for i in range(len(linelist)):
-            value = linelist[i]
+        for i in range(len(hb)):
+            if i >= len(linelist):
+                value = ''
+            else:
+                value = linelist[i]
+
             if i!=indexB:
                 lineraw.append(value)
-            else:
-                if args.soft: key = value[:-3]
-                else: key = value
-        vIndex[key] = '{}'.format(sep.join(lineraw))
+        vIndex[key] = lineraw
     fb.close()
     
     # Read the first file
@@ -79,18 +85,24 @@ def join (args):
         linelist = line.split(sep)
         k = linelist[indexA]
         if args.soft: k = k[:-3]
-        if k not in vIndex:
+        if k not in vIndex.keys():
             if args.type != 'inner':
-                args.out.write('{}\n'.format(line))
+                args.out.write('{}\n'.format(sep.join([line, ''])))
             continue
-        args.out.write('{}\n'.format(sep.join([line, vIndex[k]])))
+
+        for i in range(len(hb)):
+            if i >= len(linelist):
+                linelist.append('')
+        linelist.extend(vIndex[k])
+        
+        args.out.write('{}\n'.format(sep.join(linelist)))
         del vIndex[k]        
     fa.close()
 
     if args.type == 'outer':
         for key in vIndex:
             # For lines in B that weren't found in A fill in the fields corresponding to the first file's header.
-            line = '{}'.format(sep.join(['' if i != indexA else key for i in range(len(ha))]))
+            line = sep.join(['' if i != indexA else key for i in range(len(ha))])
             args.out.write('{}\n'.format(sep.join([line, vIndex[key]])))
 
     args.out.close()
