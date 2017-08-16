@@ -24,9 +24,25 @@
 
 import urllib.request, urllib.parse, urllib.error
 import os, sys, argparse
+import pandas as pd
+
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem.Draw import IPythonConsole
+from rdkit.Chem import PandasTools
+from rdkit.Chem import Descriptors
+PandasTools.RenderImagesInAllDataFrames()
+
 from SDFhelper import *
+
+try:
+    __import__(EPA)
+except ImportError:
+    useEPA = False
+    sys.stderr.write('Could not find EPA module. Will use only the CACTVS web service.\n')
+else:
+    useEPA = True
+    from EPA import comptox_lookup, comptox_link
 
 def writeStructure(q, mol, args):
 
@@ -48,7 +64,8 @@ def getStructure(args):
     #out,data,iformat,idname,header):
 
     if args.header: args.data.readline()  # Skip header
-    queries = set([line.rstrip().split('\t')[args.column-1] for line in args.data])
+        
+    queries = set([line.rstrip().split('\t')[args.column] for line in args.data])
     args.data.close()
 
     # for inchis use RDKit to get the structure
@@ -62,15 +79,30 @@ def getStructure(args):
                 pass
             writeStructure(q, mol, args)
 
-    # for names use CACTVS to retrieve the SMILES
+    # for names ...
     else:
         for q in queries:
+            # First try using the CACTVS web service to retrieve the SMILES
+            print (q)
             try:
                 smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+q+'/smiles')
                 smi = smi.readline().decode("utf-8").rstrip()
             except:
                 sys.stderr.write('error processing {}\n'.format(q))
                 smi = ''
+                
+            print (smi)
+                
+            # Then try to use Francis Atkinson's code to call EPA if it's available
+            if useEPA and smi == '':
+                try:
+                    tmp = comptox_lookup(q)
+                except:
+                    tmp = None
+                if tmp is not None:
+                    smi = tmp.smiles
+                else:
+                    smi = ''
             
             writeStructure(q, smi, args)
     args.out.close()
@@ -90,6 +122,8 @@ def main ():
     parser.add_argument('-f', '--field', type=str, default='name', help='Field in the output SD file that will contain the unique ID (default= name).')
     parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.sdf', help='Output file name (default: output.sdf)')
     args = parser.parse_args()
+    
+    args.column = args.column-1
     
     getStructure(args)    
 
