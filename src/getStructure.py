@@ -88,7 +88,7 @@ def getStructure(args):
                 smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+q+'/smiles')
                 smi = smi.readline().decode("utf-8").rstrip()
             except:
-                sys.stderr.write('error processing {}\n'.format(q))
+                sys.stderr.write('Error processing {}\n'.format(q))
                 smi = ''
                 
             print (smi)
@@ -98,7 +98,9 @@ def getStructure(args):
                 try:
                     tmp = comptox_lookup(q)
                 except:
+                    sys.stderr.write('Connection error at molecule {}\n'.format(q))
                     tmp = None
+                    
                 if tmp is not None:
                     smi = tmp.smiles
                 else:
