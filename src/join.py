@@ -39,17 +39,19 @@ def join (args):
 
     # Identify key in both files
     ha = fa.readline().decode("utf-8").rstrip().split(sep)
+    nfieldsA = len(ha)
     try:
         indexA = ha.index(args.key)
     except:
-        sys.stderr.write('Key not fount in file '+fa.name)
+        sys.stderr.write('Key not fount in file {}\n'.format(fa.name))
         sys.exit(1)
 
     hb = fb.readline().decode("utf-8").rstrip().split(sep)
+    nfieldsB = len(hb)
     try:
         indexB = hb.index(args.key)
     except:
-        sys.stderr.write('Key not fount in file '+fb.name)
+        sys.stderr.write('Key not fount in file {}\n'.format(fb.name))
         sys.exit(1)
 
     # Write header in the output file
@@ -63,6 +65,9 @@ def join (args):
     vIndex = {}
     for line in fb:
         linelist = line.decode("utf-8").rstrip().split(sep)
+        if len(linelist) < nfieldsB:
+            for i in range(len(linelist), nfieldsB):
+                linelist.append('')
         
         if args.soft: key = linelist[indexB][:-3]
         else: key = linelist[indexB]
@@ -83,20 +88,20 @@ def join (args):
     for line in fa:
         line = line.decode("utf-8").rstrip()
         linelist = line.split(sep)
-        k = linelist[indexA]
+        if len(linelist) < nfieldsA:
+            for i in range(len(linelist), nfieldsA):
+                linelist.append('')
+                
+        key = linelist[indexA]
         if args.soft: k = k[:-3]
-        if k not in vIndex.keys():
+        if key not in vIndex.keys():
             if args.type != 'inner':
                 args.out.write('{}\n'.format(sep.join([line, ''])))
             continue
 
-        for i in range(len(hb)):
-            if i >= len(linelist):
-                linelist.append('')
-        linelist.extend(vIndex[k])
+        linelist.extend(vIndex[key])
         
         args.out.write('{}\n'.format(sep.join(linelist)))
-        del vIndex[k]        
     fa.close()
 
     if args.type == 'outer':
