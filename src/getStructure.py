@@ -36,10 +36,10 @@ PandasTools.RenderImagesInAllDataFrames()
 from SDFhelper import *
 
 try:
-    __import__(EPA)
+    __import__('EPA')
 except ImportError:
     useEPA = False
-    sys.stderr.write('Could not find EPA module. Will use only the CACTVS web service.\n')
+    sys.stderr.write('\n*** Could not find EPA module. Will use only the CACTVS web service. ***\n\n')
 else:
     useEPA = True
     from EPA import comptox_lookup, comptox_link
@@ -52,7 +52,7 @@ def writeStructure(q, mol, args):
                 mol = Chem.MolFromSmiles(mol)
                 Chem.AllChem.Compute2DCoords(mol)
             except:
-                sys.stderr.write('error processing', q)
+                sys.stdout.write('Error processing', q)
 
         writeSDF(mol, args.out, {args.field: q}, q)
         
@@ -65,7 +65,7 @@ def getStructure(args):
 
     if args.header: args.data.readline()  # Skip header
         
-    queries = set([line.rstrip().split('\t')[args.column] for line in args.data])
+    queries = set([line.rstrip().split('\t')[args.column].strip() for line in args.data if len(line.rstrip().split('\t')) > args.column])
     args.data.close()
 
     # for inchis use RDKit to get the structure
@@ -75,7 +75,7 @@ def getStructure(args):
                 mol = Chem.inchi.MolFromInchi (q)
                 AllChem.Compute2DCoords(mol)
             except:
-                sys.stderr.write('error processing {}\n'.format(q))
+                sys.stdout.write('Error processing {}\n'.format(q))
                 pass
             writeStructure(q, mol, args)
 
@@ -83,27 +83,24 @@ def getStructure(args):
     else:
         for q in queries:
             # First try using the CACTVS web service to retrieve the SMILES
-            print (q)
             try:
                 smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+q+'/smiles')
                 smi = smi.readline().decode("utf-8").rstrip()
             except:
-                sys.stderr.write('Error processing {}\n'.format(q))
                 smi = ''
-                
-            print (smi)
                 
             # Then try to use Francis Atkinson's code to call EPA if it's available
             if useEPA and smi == '':
                 try:
                     tmp = comptox_lookup(q)
                 except:
-                    sys.stderr.write('Connection error at molecule {}\n'.format(q))
+                    sys.stdout.write('Connection error at molecule {}\n'.format(q))
                     tmp = None
                     
                 if tmp is not None:
                     smi = tmp.smiles
                 else:
+                    sys.stdout.write('Could not resolve {}\n'.format(q))
                     smi = ''
             
             writeStructure(q, smi, args)
