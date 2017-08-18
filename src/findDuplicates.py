@@ -107,7 +107,7 @@ def findDuplicates (args):
 def main ():
 
     parser = argparse.ArgumentParser(description='Find duplicated molecules. In the output file, the first columns present the properties of the first molecule duplicated, the last columns contain data about the second molecule identified.')
-    parser.add_argument('-f', '--fn', type=argparse.FileType('rb'), help='SD file', required=True)
+    parser.add_argument('-f', '--fn', type=argparse.FileType('rb'), help='Input file', required=True)
     parser.add_argument('-i', '--id', type=str, default='database_substance_id', help='moleculeID')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-s', '--smi', action='store_const', dest='type', const='smi', default='smi', help='The input format is a file with smiles strings (default).')
