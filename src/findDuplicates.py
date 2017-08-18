@@ -46,7 +46,10 @@ def findDuplicates (args):
             args.fn.readline()
         for line in args.fn:
             fields = line.decode('utf-8').rstrip().split(sep)
-            smiles = fields[args.col]
+            if len(fields) > args.col:
+                smiles = fields[args.col]
+            else:
+                continue
             mol = Chem.MolFromSmiles(smiles)
             counter+=1
 
@@ -108,20 +111,21 @@ def main ():
 
     parser = argparse.ArgumentParser(description='Find duplicated molecules. In the output file, the first columns present the properties of the first molecule duplicated, the last columns contain data about the second molecule identified.')
     parser.add_argument('-f', '--fn', type=argparse.FileType('rb'), help='Input file', required=True)
-    parser.add_argument('-i', '--id', type=str, default='database_substance_id', help='moleculeID')
+    parser.add_argument('-i', '--id', type=str, help='If the input is an SD file, specify the field (if any) with the molecule ID. If the input has smiles, specify the column with the molecule ID.')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-s', '--smi', action='store_const', dest='type', const='smi', default='smi', help='The input format is a file with smiles strings (default).')
     group.add_argument('-m', '--sdf', action='store_const', dest='type', const='sdf', help='The input format is an SD file.')
-    parser.add_argument('-c', '--col', type=int, default=1, help='If the input file is a data file with smiles strings, indicate which column contains the smiles.')
+    parser.add_argument('-c', '--col', type=int, default=1, help='If the input file has smiles, indicate which column contains the smiles strings.')
     parser.add_argument('-n', '--noheader', action='store_false', dest='header', help='Input data file doesn\'t have a header line.')
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='duplicates.txt', help='Output file name (default: duplicates.txt)')
     args = parser.parse_args()
 
     if args.type == 'smi':
         try:
-            args.id = int(args.id)
+            args.id = int(args.id)-1
+            args.col = args.col-1
         except:
-            sys.stderr.write('If the input file has smiles string, the id field (-i) must contain the index of the column with the comound identifier.\n')
+            sys.stderr.write('If the input file has smiles strings, the id field (-i) must contain the index of the column with the comound identifier.\n')
             sys.exit()
 
     findDuplicates(args)
