@@ -85,7 +85,7 @@ def getStructure(args):
             # First try using the CACTVS web service to retrieve the SMILES
             try:
                 smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+q+'/smiles')
-                smi = smi.readline().decode("utf-8").rstrip()
+                smi = smi.readline().decode("utf-8").rstrip().replace('|', '')
             except:
                 smi = ''
                 
