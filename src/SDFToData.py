@@ -57,12 +57,9 @@ def fields2file (args):
         
         line = [name]
         for prop in propL[1:]:
-            #print (prop)
             if prop in propD:
-                #print (str(propD[prop].replace('\n', '; ')))
                 line.append(str(propD[prop]).replace('\n', '; '))
             else:
-                #print ('not found')
                 line.append('N/A')
 
         args.out.write('{}\n'.format(sep.join(line)))
