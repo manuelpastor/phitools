@@ -22,9 +22,8 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
-from rdkit import Chem
-from rdkit import RDLogger
-from rdkit.Chem import AllChem,Draw,Descriptors
+from rdkit import Chem, RDLogger
+from rdkit.Chem import AllChem, Draw, Descriptors
 from SDFhelper import *
 import os, sys, argparse
 
@@ -131,9 +130,7 @@ def main ():
     parser = argparse.ArgumentParser(description='Find duplicated molecules. In the output file, the first columns present the properties of the first molecule duplicated, the last columns contain data about the second molecule identified.')
     parser.add_argument('-f', '--fn', type=argparse.FileType('rb'), help='Input file', required=True)
     parser.add_argument('-i', '--id', type=str, help='If the input is an SD file, specify the field (if any) with the molecule ID. If the input has smiles, specify the column with the molecule ID.')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-s', '--smi', action='store_const', dest='type', const='smi', default='smi', help='The input format is a file with smiles strings (default).')
-    group.add_argument('-m', '--sdf', action='store_const', dest='type', const='sdf', help='The input format is an SD file.')
+    parser.add_argument('-f', '--format', action='store', dest='type', choices=['smi', 'sdf'], default='smi', help='Specify the input format (smiles strings (default) or SD file).')
     parser.add_argument('-c', '--col', type=int, default=1, help='If the input file has smiles, indicate which column contains the smiles strings.')
     parser.add_argument('-n', '--noheader', action='store_false', dest='header', help='Input data file doesn\'t have a header line.')
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='duplicates.txt', help='Output file name (default: duplicates.txt)')
