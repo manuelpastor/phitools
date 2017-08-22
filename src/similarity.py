@@ -5,15 +5,16 @@ from rdkit.Chem import AllChem
 from SDFhelper import *
 import argparse, sys
 
+sep = '\t'
+
 def compare(args):
 
     ###########################
     ### Store the compounds ###
     ###########################
-
     if args.format == 'smi':  
         if args.header:
-            args.fn.readline()
+            args.filea.readline()
 
         fpA = {}
         count = 0
@@ -32,6 +33,7 @@ def compare(args):
             fpA[name] = AllChem.GetMorganFingerprint(mol,4)
 
         if args.fileb is not None:
+            if args.header: args.fileb.readline()
             fpB = {}
             count = 0
             for line in args.fileb:
@@ -78,13 +80,16 @@ def compare(args):
     if args.fileb is not None: 
         namesB = list(fpB.keys())
         nB = len(namesB)
+
+    print (nA)
+    print (nB)
     
     #################################
     ### Get compound similarities ###
     #################################
 
     simD = {}
-    if args.dist == 'max': startSim = 0
+    if args.sim == 'max': startSim = 0
     else: startSim = 1
 
     # Work with only one input file
@@ -101,18 +106,18 @@ def compare(args):
 
                 sim = DataStructs.TanimotoSimilarity(fp1, fp2)
 
-                if args.dist == 'all':
+                if args.sim == 'all':
                     args.out.write('{}\t{}\t{}\n'.format(name1, name2, sim))
                     args.out.write('{}\t{}\t{}\n'.format(name2, name1, sim))
                 else:
-                    if args.dist == 'max':
+                    if args.sim == 'max':
                         if sim > simD[name1][1]: simD[name1] = [name2, sim]
                         if sim > simD[name2][1]: simD[name2] = [name1, sim]
                     else:
                         if sim < simD[name1][1]: simD[name1] = [name2, sim]
                         if sim < simD[name2][1]: simD[name2] = [name1, sim]
 
-        if args.dist != 'all':
+        if args.sim != 'all':
             for name in simD:
                 args.out.write('{}\t{}\t{}\n'.format(name, simD[name][0], simD[name][1]))
 
@@ -132,18 +137,18 @@ def compare(args):
 
                 sim = DataStructs.TanimotoSimilarity(fp1, fp2)
 
-                if args.dist == 'all':
+                if args.sim == 'all':
                     args.out.write('{}\t{}\t{}\n'.format(name1, name2, sim))
                     args.out.write('{}\t{}\t{}\n'.format(name2, name1, sim))
                 else:
-                    if args.dist == 'max':
+                    if args.sim == 'max':
                         if sim > simD[name1][1]: simD[name1] = [name2, sim]
                         if sim > simD[name2][1]: simD[name2] = [name1, sim]
                     else:
                         if sim < simD[name1][1]: simD[name1] = [name2, sim]
                         if sim < simD[name2][1]: simD[name2] = [name1, sim]
 
-        if args.dist != 'all':
+        if args.sim != 'all':
             for name in simD:
                 args.out.write('{}\t{}\t{}\n'.format(name, simD[name][0], simD[name][1]))
                         
@@ -161,9 +166,12 @@ def main ():
     parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.txt', help='Output file name (default: output.txt)')
     args = parser.parse_args()
 
+    if args.col is not None:
+        args.col -= 1
+
     if args.format == 'smi' and args.id is not None:
         try:
-            args.id = int(args.id)
+            args.id = int(args.id)-1
         except:
             sys.stderr('The ID argument must be a column index if the inpu file is of smiles format.\n')
             sys.exit()
