@@ -3,6 +3,7 @@
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 from SDFhelper import *
+from moleculeHelper import *
 import argparse, sys
 
 sep = '\t'
@@ -12,77 +13,14 @@ def compare(args):
     ###########################
     ### Store the compounds ###
     ###########################
-    if args.format == 'smi':  
-        if args.header:
-            args.filea.readline()
-
-        fpA = {}
-        count = 0
-        for line in args.filea:
-            count += 1
-            fields = line.decode('utf-8').rstrip().split(sep)
-            if len(fields) > args.col:
-                smiles = fields[args.col]
-            else: continue
-            mol = Chem.MolFromSmiles(smiles)
-            if mol is None: continue
-
-            if args.id is not None: name = fields[args.id]
-            else: name = 'mol%0.8d'%count
-
-            fpA[name] = AllChem.GetMorganFingerprint(mol,4)
-
-        if args.fileb is not None:
-            if args.header: args.fileb.readline()
-            fpB = {}
-            count = 0
-            for line in args.fileb:
-                count += 1
-                fields = line.decode('utf-8').rstrip().split(sep)
-                if len(fields) > args.col:
-                    smiles = fields[args.col]
-                else: continue
-                mol = Chem.MolFromSmiles(smiles)
-                if mol is None: continue
-
-                if args.id is not None: name = fields[args.id]
-                else: name = 'mol%0.8d'%count
-
-                fpB[name] = AllChem.GetMorganFingerprint(mol,4)
-
-    else:
-        # SD file
-        suppl = Chem.ForwardSDMolSupplier(args.filea,removeHs=False)
-        fpA = {}
-        count = 0
-        for mol in suppl:
-            count += 1
-            if mol is None: continue
-            name = getName(mol, count)
-            mol.UpdatePropertyCache(strict=False)
-            mh=Chem.AddHs(mol, addCoords=True)
-            fpA[name] = AllChem.GetMorganFingerprint(mh,4)
-
-        if args.fileb is not None:
-            suppl = Chem.ForwardSDMolSupplier(args.fileb,removeHs=False)
-            fpB = {}
-            count = 0
-            for mol in suppl:
-                count += 1
-                if mol is None: continue
-                name = getName(mol, count)
-                mol.UpdatePropertyCache(strict=False)
-                mh=Chem.AddHs(mol, addCoords=True)
-                fpB[name] = AllChem.GetMorganFingerprint(mh,4)
-
+    fpA = getFPdict (args.format, args.filea, molID= args.id, smilesI= args.col)
     namesA = list(fpA.keys())
     nA = len(namesA)
-    if args.fileb is not None: 
+
+    if args.fileb is not None:
+        fpB = getFPdict (args.format, args.fileb, molID= args.id, smilesI= args.col)
         namesB = list(fpB.keys())
         nB = len(namesB)
-
-    print (nA)
-    print (nB)
     
     #################################
     ### Get compound similarities ###
@@ -105,6 +43,8 @@ def compare(args):
                 fp2 = fpA[name2]
 
                 sim = DataStructs.TanimotoSimilarity(fp1, fp2)
+                if args.cutoff is not None and sim < args.cutoff:
+                    continue
 
                 if args.sim == 'all':
                     args.out.write('{}\t{}\t{}\n'.format(name1, name2, sim))
@@ -136,17 +76,16 @@ def compare(args):
                 fp2 = fpB[name2]
 
                 sim = DataStructs.TanimotoSimilarity(fp1, fp2)
+                if args.cutoff is not None and sim < args.cutoff:
+                    continue
 
                 if args.sim == 'all':
                     args.out.write('{}\t{}\t{}\n'.format(name1, name2, sim))
-                    args.out.write('{}\t{}\t{}\n'.format(name2, name1, sim))
                 else:
                     if args.sim == 'max':
                         if sim > simD[name1][1]: simD[name1] = [name2, sim]
-                        if sim > simD[name2][1]: simD[name2] = [name1, sim]
                     else:
                         if sim < simD[name1][1]: simD[name1] = [name2, sim]
-                        if sim < simD[name2][1]: simD[name2] = [name1, sim]
 
         if args.sim != 'all':
             for name in simD:
@@ -160,21 +99,23 @@ def main ():
     parser.add_argument('-b', '--fileb', type=argparse.FileType('rb'), help='Optional input file. If it is provided he compounds in this file will be compared to the compounds in the first input file.')
     parser.add_argument('-f', '--format', action='store', dest='format', choices=['smi', 'sdf'], default='smi', help='Specify the input format (smiles strings (default) or SD file).')
     parser.add_argument('-s', '--sim', action='store', choices=['min', 'max', 'all'], default='max', help='Get only the closest compounds (\'max\', default), the most dissimilar (\'min\'), or all v all similarties (\'all\')')
+    parser.add_argument('-c', '--cutoff', type=float, help='If wanted, set a minimum similarity cutoff.')
     parser.add_argument('-i', '--id', type=str, help='Field containing the molecule ID. If it is not provided for the SD file format, the SD file compound name will be used.')
-    parser.add_argument('-c', '--col', type=int, default=1, help='If the input file has smiles, indicate which column contains the smiles strings.')
+    parser.add_argument('-x', '--col', type=int, default=1, help='If the input file has smiles, indicate which column contains the smiles strings.')
     parser.add_argument('-n', '--noheader', action='store_false', dest='header', help='Smiles input data file doesn\'t have a header line.')
     parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.txt', help='Output file name (default: output.txt)')
     args = parser.parse_args()
 
     if args.col is not None:
         args.col -= 1
+    args.id = int(args.id)-1
 
-    if args.format == 'smi' and args.id is not None:
-        try:
-            args.id = int(args.id)-1
-        except:
-            sys.stderr('The ID argument must be a column index if the inpu file is of smiles format.\n')
-            sys.exit()
+    #if args.format == 'smi' and args.id is not None:
+        #try:
+        #    args.id = int(args.id)-1
+        #except:
+        #    sys.stderr('The ID argument must be a column index if the input file is of smiles format.\n')
+        #    sys.exit()
 
     compare(args)    
 
