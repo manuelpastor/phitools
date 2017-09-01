@@ -119,11 +119,7 @@ def main ():
     parser.add_argument('-b', '--fileb', type=argparse.FileType('rb'), help='Second file to join.', required=True)
     parser.add_argument('-f', '--field', type=str, dest='key', help='Name of the field to be used as a common key.', required=True)
     parser.add_argument('-s', '--soft', action='store_true', help='When InChiKey based comparisons are performed, discard the last 3 chars.')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-l', '--left', action='store_const', dest='type', const='left', default='left', help='Left join (default).')
-    group.add_argument('-r', '--right', action='store_const', dest='type', const='right', help='Right join.')
-    group.add_argument('-i', '--inner', action='store_const', dest='type', const='inner', help='Inner join.')
-    group.add_argument('-x', '--outer', action='store_const', dest='type', const='outer', help='Outer join.')
+    parser.add_argument('-t', '--type', action='store', choices=['left', 'right', 'inner', 'outer'], default='left', help='Join type (\'left\', default), \'right\', \'inner\', or \'outer\'')
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.tsv', help='Output file name (default: output.tsv)')
     args = parser.parse_args()
 
