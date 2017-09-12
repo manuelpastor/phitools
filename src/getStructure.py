@@ -24,14 +24,11 @@
 
 import urllib.request, urllib.parse, urllib.error
 import os, sys, argparse
-import pandas as pd
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem.Draw import IPythonConsole
-from rdkit.Chem import PandasTools
-from rdkit.Chem import Descriptors
-PandasTools.RenderImagesInAllDataFrames()
+from rdkit.Chem import AllChem, SaltRemover
+
+remover = SaltRemover.SaltRemover()
 
 from SDFhelper import *
 
@@ -46,7 +43,7 @@ else:
 
 def writeStructure(q, mol, args):
 
-    if args.sdf:
+    if args.format == 'sdf':
         if type(mol) is str:
             try:
                 mol = Chem.MolFromSmiles(mol)
@@ -56,7 +53,7 @@ def writeStructure(q, mol, args):
 
         writeSDF(mol, args.out, {args.field: q}, q)
         
-    elif args.smi:
+    elif args.format == 'smi':
         args.out.write('{}\n'.format('\t'.join([q, mol])))
 
 
@@ -69,10 +66,12 @@ def getStructure(args):
     args.data.close()
 
     # for inchis use RDKit to get the structure
-    if args.inchis:
+    if args.type == 'inchis':
         for q in queries:
             try:
                 mol = Chem.inchi.MolFromInchi (q)
+                if args.removesalts:
+                    mol = SaltRemover.StripMol(mol,dontRemoveEverything=True)
                 AllChem.Compute2DCoords(mol)
             except:
                 sys.stdout.write('Error processing {}\n'.format(q))
@@ -103,6 +102,14 @@ def getStructure(args):
                     sys.stdout.write('Could not resolve {}\n'.format(q))
                     smi = ''
             
+            if args.removesalts:
+                try:
+                    mol = Chem.MolFromSmiles(smi)
+                    mol = remover.StripMol(mol,dontRemoveEverything=True)
+                except:
+                    pass
+                else:
+                    smi = Chem.MolToSmiles(mol)
             writeStructure(q, smi, args)
     args.out.close()
 
@@ -113,11 +120,12 @@ def main ():
     parser.add_argument('-c', '--column', type=int, default=1, help='Column in the input file that contains the molecule identifiers (default= 1).')
     parser.add_argument('-n', '--noheader', action='store_false', dest='header', help='Input data file doesn\'t have a header line.')
     group1 = parser.add_mutually_exclusive_group()
-    group1.add_argument('-x', '--identifier', action='store_true', help='The input format will be compound indentifiers.')
-    group1.add_argument('-i', '--inchis', action='store_true', help='The input format will be molecule InChis.')
+    group1.add_argument('-x', '--identifier', action='store_const', dest='type', const= 'id', help='The input format will be compound indentifiers (default).', default= 'identifier')
+    group1.add_argument('-i', '--inchis', action='store_const', dest='type', const= 'inchi', help='The input format will be molecule InChis.')
     group2 = parser.add_mutually_exclusive_group()
-    group2.add_argument('-m', '--sdf', action='store_true', help='The output format will be an SD file.')
-    group2.add_argument('-s', '--smi', action='store_true', help='The output format will be a smiles string appended to the input table.')
+    group2.add_argument('-s', '--smi', action='store_const', dest='format', const='smi', default='smi', help='The input format is a file with smiles strings (default).')
+    group2.add_argument('-m', '--sdf', action='store_const', dest='format', const='sdf', help='The input format is an SD file.')
+    parser.add_argument('-r', '--removesalts', action='store_true', help='Remove salts from the structure.')
     parser.add_argument('-f', '--field', type=str, default='name', help='Field in the output SD file that will contain the unique ID (default= name).')
     parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.sdf', help='Output file name (default: output.sdf)')
     args = parser.parse_args()
