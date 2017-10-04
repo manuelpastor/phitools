@@ -274,7 +274,7 @@ def protonateFile(fnameI, pH= 7.4, mokaPath= os.environ.get('MOKA_PATH'), clean=
 
     return (True, fnameO)
 
-def convert3D(mol, corinaPath= os.environ.get('CORINA_PATH'), clean= True):
+def convert3DMol(mol, corinaPath= os.environ.get('CORINA_PATH'), clean= False):
     """Converts the 2D structure of the molecule "moli" to 3D
 
         In this implementation, it uses CORINA from Molecular Networks
@@ -320,6 +320,53 @@ def convert3D(mol, corinaPath= os.environ.get('CORINA_PATH'), clean= True):
     if clean:
         removefile(fnameI)
         removefile(fnameO)
+        removefile('corina.trc')
+
+    return (True, molO)
+
+def convert3DFile(fnameI, corinaPath= os.environ.get('CORINA_PATH'), clean= False):
+    """Converts the 2D structure of the molecule "moli" to 3D
+
+        In this implementation, it uses CORINA from Molecular Networks
+        The result is a tuple containing:
+           1) suucTrue/False: describes the success of the 3D conversion for this compound
+           2) (if True ) The name of the 3D molecule
+              (if False) The error mesage
+    """
+
+    stderrf = open (os.devnull, 'w')
+    stdoutf = open (os.devnull, 'w')
+
+    pre, ext = os.path.splitext(fnameI)
+    fnameO = pre + '.3D' + ext
+
+    corinaRun = mokaPath+'/corina'
+    if corinaPath == None or  not corinaRun.is_file():
+        return (False, 'Corina path not found.')
+    call = [corinaRun,
+            '-dwh','-dori',
+            '-ttracefile=corina.trc',
+            '-it=sdf', fnameI,
+            '-ot=sdf', fnameO]
+
+    try:
+        retcode = subprocess.call(call, stdout=stdoutf, stderr=stderrf)
+    except:
+        return (False, 'Corina execution error')
+
+    stdoutf.close()
+    stderrf.close()
+
+    if retcode != 0:
+        return (False, 'Corina execution error')
+
+    if not os.path.exists(fnameO):
+        return (False, 'Corina output not found')
+
+    suppl = SDMolSupplier(fnameO)
+    molO = suppl.next()
+
+    if clean:
         removefile('corina.trc')
 
     return (True, molO)
