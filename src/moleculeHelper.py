@@ -363,10 +363,7 @@ def convert3DFile(fnameI, corinaPath= os.environ.get('CORINA_PATH'), clean= Fals
     if not os.path.exists(fnameO):
         return (False, 'Corina output not found')
 
-    suppl = SDMolSupplier(fnameO)
-    molO = suppl.next()
-
     if clean:
         removefile('corina.trc')
 
-    return (True, molO)
+    return (True, fnameO)
