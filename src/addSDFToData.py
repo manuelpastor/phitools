@@ -23,10 +23,7 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
-import os
-import sys
-import argparse
-import re
+import os, sys, argparse, re
 
 sep = '\t'
 
@@ -36,12 +33,11 @@ def addData (args): #sdf_id, data_id, prop_id, out_id):
     ###################
     # Read csv file
     ###################
-    #f = open (data_id)
-    tags = args.data.readline().rstrip().split(sep) 
-    vals = []
+    header = args.data.readline().rstrip().split(sep) 
+    dataD = {}
     for line in args.data:
-        line=line.rstrip().split(sep)
-        vals.append(line)            
+        line = line.rstrip().split(sep)
+        dataD = {header[i]:line[i] for i in range(len(header))}            
     args.data.close()  
 
     ###################
@@ -49,8 +45,8 @@ def addData (args): #sdf_id, data_id, prop_id, out_id):
     ###################
     
     prop_id=args.id.replace(" ","") # delete whitespaces
-    if not prop_id in tags:        
-        for i in tags:
+    if not prop_id in header:        
+        for i in header:
             match=re.search(prop_id[:5], i)
             if match:
                 print("Property descriptor not found, please try again. Similar property found:" + i)
@@ -61,11 +57,11 @@ def addData (args): #sdf_id, data_id, prop_id, out_id):
                     print("Property descriptor not found, please try again. Similar property found:" + i)
                     return                
         #not found 
-        if i == tags[-1]:
+        if i == header[-1]:
             print("property descriptor not found")
             return
     else:
-        ind=tags.index(prop_id)
+        ind=header.index(prop_id)
         
     ###################
     # Process SDFile  #
@@ -76,23 +72,22 @@ def addData (args): #sdf_id, data_id, prop_id, out_id):
     
     for mol in suppl:
     
-        if mol is None: continue        
+        if mol is None: continue
 
-        l = []
-        for i in mol.GetPropNames():
-            l.append(i)
-        if not prop_id in l: continue
-
-        db_id=mol.GetProp(mol.GetPropNames()[l.index(prop_id)])
+        propD = getProperties(mol)
+        if IDfield not in propD.keys():
+            cmpdID = getName(mol)
+        else:
+            cmpdID = mol.GetProp(IDfield)
 
         for i in vals:
-            if i[ind]==db_id:
+            if i[ind]==cmpdID:
                 # Add MolBlock
                 args.out.write(Chem.MolToMolBlock(mol, kekulize=False))
                 
                 # Add values
                 for j in range(len(i)):                          
-                    args.out.write('>  <'+tags[j]+'>\n'+i[j]+'\n\n')               
+                    args.out.write('>  <'+header[j]+'>\n'+i[j]+'\n\n')               
                 args.out.write('$$$$\n')
         
     args.out.close()
@@ -105,7 +100,7 @@ def main ():
     parser.add_argument('-f', '--sdf', type=argparse.FileType('r'), help='SD file', required=True)
     parser.add_argument('-d', '--data', type=argparse.FileType('r'), help='Data file', required=True)
     parser.add_argument('-i', '--id', type=str, help='moleculeID', required=True)
-    parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.sdf', help='Output file name (default: output.sdf)')
+    parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.txt', help='Output file name (default: output.txt)')
     args = parser.parse_args()
     args.sdf.close()
 

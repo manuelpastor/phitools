@@ -23,7 +23,7 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
-from SDFhelper import *
+from moleculeHelper import *
 import os, sys, argparse, re
 
 sep = '\t'

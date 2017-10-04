@@ -24,7 +24,7 @@
 
 from rdkit import Chem
 import os, sys, re, argparse
-from SDFhelper import *
+from moleculeHelper import *
 
 sep = '\t'
 

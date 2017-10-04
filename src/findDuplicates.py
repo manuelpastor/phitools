@@ -25,7 +25,7 @@
 from rdkit import Chem
 from rdkit import RDLogger
 from rdkit.Chem import AllChem,Draw,Descriptors
-from SDFhelper import *
+from moleculeHelper import *
 import os, sys, argparse
 
 sep = '\t'

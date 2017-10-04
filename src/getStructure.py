@@ -27,10 +27,9 @@ import os, sys, argparse
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, SaltRemover
-
 remover = SaltRemover.SaltRemover()
 
-from SDFhelper import *
+from moleculeHelper import *
 
 try:
     __import__('EPA')
@@ -90,6 +89,7 @@ def getStructure(args):
                 
             # Then try to use Francis Atkinson's code to call EPA if it's available
             if useEPA and smi == '':
+                print ('EPA')
                 try:
                     tmp = comptox_lookup(q)
                 except:

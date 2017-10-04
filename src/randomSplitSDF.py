@@ -22,9 +22,7 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
-import os
-import sys
-import getopt
+import os, sys, getopt
 import numpy as np
 
 def splitSDF (sdf, prop, seed):

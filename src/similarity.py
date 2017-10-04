@@ -2,7 +2,6 @@
 
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
-from SDFhelper import *
 from moleculeHelper import *
 import argparse, sys
 
@@ -37,29 +36,28 @@ def compare(args):
 
         for i in range(nA):
             name1 = namesA[i]
-            fp1 = fpA[name1]            
+            [fp1, smiles1] = fpA[name1]
             for j in range(i+1, nA):
                 name2 = namesA[j]
-                fp2 = fpA[name2]
-
+                [fp2, smiles2] = fpA[name2]
                 sim = DataStructs.TanimotoSimilarity(fp1, fp2)
                 if args.cutoff is not None and sim < args.cutoff:
                     continue
 
                 if args.sim == 'all':
-                    args.out.write('{}\t{}\t{}\n'.format(name1, name2, sim))
-                    args.out.write('{}\t{}\t{}\n'.format(name2, name1, sim))
+                    args.out.write('{}\t{}\t{}\t{}\t{}\n'.format(name1, smiles1, name2, smiles2, sim))
+                    args.out.write('{}\t{}\t{}\t{}\t{}\n'.format(name2, smiles2, name1, smiles1, sim))
                 else:
                     if args.sim == 'max':
-                        if sim > simD[name1][1]: simD[name1] = [name2, sim]
-                        if sim > simD[name2][1]: simD[name2] = [name1, sim]
+                        if sim > simD[name1][1]: simD[name1] = [name2, smiles2, sim]
+                        if sim > simD[name2][1]: simD[name2] = [name1, smiles1, sim]
                     else:
-                        if sim < simD[name1][1]: simD[name1] = [name2, sim]
-                        if sim < simD[name2][1]: simD[name2] = [name1, sim]
+                        if sim < simD[name1][1]: simD[name1] = [name2, smiles2, sim]
+                        if sim < simD[name2][1]: simD[name2] = [name1, smiles1, sim]
 
         if args.sim != 'all':
             for name in simD:
-                args.out.write('{}\t{}\t{}\n'.format(name, simD[name][0], simD[name][1]))
+                args.out.write('{}\t{}\t{}\t{}\n'.format(name, simD[name][0], simD[name][1], simD[name][2]))
 
     # Work with two input files
     else:
@@ -70,26 +68,26 @@ def compare(args):
 
         for i in range(nA):
             name1 = namesA[i]
-            fp1 = fpA[name1]            
+            [fp1, smiles1] = fpA[name1]            
             for j in range(nB):
                 name2 = namesB[j]
-                fp2 = fpB[name2]
+                [fp2, smiles2] = fpB[name2]
 
                 sim = DataStructs.TanimotoSimilarity(fp1, fp2)
                 if args.cutoff is not None and sim < args.cutoff:
                     continue
 
                 if args.sim == 'all':
-                    args.out.write('{}\t{}\t{}\n'.format(name1, name2, sim))
+                    args.out.write('{}\t{}\t{}\t{}\t{}\n'.format(name1, smiles1, name2, smiles2, sim))
                 else:
                     if args.sim == 'max':
-                        if sim > simD[name1][1]: simD[name1] = [name2, sim]
+                        if sim > simD[name1][1]: simD[name1] = [name2, smiles2, sim]
                     else:
-                        if sim < simD[name1][1]: simD[name1] = [name2, sim]
+                        if sim < simD[name1][1]: simD[name1] = [name2, smiles2, sim]
 
         if args.sim != 'all':
             for name in simD:
-                args.out.write('{}\t{}\t{}\n'.format(name, simD[name][0], simD[name][1]))
+                args.out.write('{}\t{}\t{}\t{}\n'.format(name, simD[name][0], simD[name][1], simD[name][2]))
                         
 
 

@@ -23,9 +23,7 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 import urllib.request, urllib.parse, urllib.error
-import os
-import sys
-import argparse
+import os, sys, argparse
 from rdkit import Chem
 from rdkit.Chem import AllChem
 

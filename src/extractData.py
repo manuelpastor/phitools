@@ -23,7 +23,7 @@
 
 import os, sys, argparse
 from rdkit import Chem
-from SDFhelper import *
+from moleculeHelper import *
 
 def extractAll (args):
 

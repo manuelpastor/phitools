@@ -24,9 +24,7 @@
 
 from rdkit import Chem
 from rdkit.Chem import AllChem,Draw,Descriptors
-import os
-import sys
-import getopt
+import os, sys, getopt
 
 def viewSDF (sdf_id,out_id,prop_id):
 
