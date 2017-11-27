@@ -7,5 +7,5 @@ setup(name='phitools',
       author='Manuel Pastor and Elisabet Gregori',
       author_email='manuel.pastor@upf.edu',
       license='Apache License, Version 2.0',
-      packages=['phitools', 'phitools.src'],
+      packages=['.', 'src'],
       zip_safe=False)
