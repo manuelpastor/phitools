@@ -12,12 +12,15 @@ def compare(args):
     ###########################
     ### Store the compounds ###
     ###########################
-    fpA = getFPdict (args.format, args.filea, molID= args.id, smilesI= args.col)
+    fpType = args.descriptor[0:4]
+    fpRadius = int(args.descriptor[4:])
+
+    fpA = getFPdict (args.format, args.filea, molID= args.id, smilesI= args.col, header= args.header, fpType= fpType, radius= fpRadius)
     namesA = list(fpA.keys())
     nA = len(namesA)
 
     if args.fileb is not None:
-        fpB = getFPdict (args.format, args.fileb, molID= args.id, smilesI= args.col)
+        fpB = getFPdict (args.format, args.fileb, molID= args.id, smilesI= args.col, header= args.header, fpType= fpType, radius= fpRadius)
         namesB = list(fpB.keys())
         nB = len(namesB)
     
@@ -97,23 +100,24 @@ def main ():
     parser.add_argument('-b', '--fileb', type=argparse.FileType('rb'), help='Optional input file. If it is provided he compounds in this file will be compared to the compounds in the first input file.')
     parser.add_argument('-f', '--format', action='store', dest='format', choices=['smi', 'sdf'], default='smi', help='Specify the input format (smiles strings (default) or SD file).')
     parser.add_argument('-s', '--sim', action='store', choices=['min', 'max', 'all'], default='max', help='Get only the closest compounds (\'max\', default), the most dissimilar (\'min\'), or all v all similarties (\'all\')')
+    parser.add_argument('-d', '--descriptor', action='store', dest='descriptor', default='ecfp4', help='Specify the descriptor to be used in the similarity calculation (ecfp4 (default), fcfp4, ecfp2, etc.).')
     parser.add_argument('-c', '--cutoff', type=float, help='If wanted, set a minimum similarity cutoff.')
     parser.add_argument('-i', '--id', type=str, help='Field containing the molecule ID. If it is not provided for the SD file format, the SD file compound name will be used.')
     parser.add_argument('-x', '--col', type=int, default=1, help='If the input file has smiles, indicate which column contains the smiles strings.')
     parser.add_argument('-n', '--noheader', action='store_false', dest='header', help='Smiles input data file doesn\'t have a header line.')
     parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.txt', help='Output file name (default: output.txt)')
     args = parser.parse_args()
+    
+    if args.format == 'smi':
+        if args.col is not None:
+            args.col -= 1
 
-    if args.col is not None:
-        args.col -= 1
-    args.id = int(args.id)-1
-
-    #if args.format == 'smi' and args.id is not None:
-        #try:
-        #    args.id = int(args.id)-1
-        #except:
-        #    sys.stderr('The ID argument must be a column index if the input file is of smiles format.\n')
-        #    sys.exit()
+    if args.format == 'smi' and args.id is not None:
+        try:
+            args.id = int(args.id)-1
+        except:
+            sys.stderr('The ID argument must be a column index if the input file is of smiles format.\n')
+            sys.exit()
 
     compare(args)    
 

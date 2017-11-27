@@ -1,13 +1,32 @@
 #!/usr/bin/env python
 
 from rdkit import Chem, DataStructs
-from rdkit.Chem import AllChem, SaltRemover
-from standardise import standardise
+from rdkit.Chem import *
+from standardiser import standardise
 
 from pathlib import Path
-import sys, tempfile
+import sys, os, tempfile
 
 rand_str = lambda n: ''.join([random.choice(string.ascii_lowercase) for i in range(n)])
+
+def getSmiSupplier(fname, molID, smilesI, header):
+    with open(fname) as f:
+        if header: f.readline()
+        suppl = []
+        for line in f:
+            fields = line.rstrip().split('\n')
+            smi = fields[smilesI]
+            id = fields[molID]
+
+            try:
+                mol = MolFromSmiles(smi)
+            except:
+                continue
+            if mol is not None:
+                setName(mol, id)
+            suppl.append(mol)
+    
+    return suppl
 
 def morgan(mol, fpType, r=4):
     # r is the radius parameter. For instance, r=4 will yield ECFP4 or FCFP4 fingerprints
@@ -24,7 +43,7 @@ def getFPdict_smi (fh, molID= None, fpType= 'ecfp', radius= 4, smilesI= 1, heade
 
     if header:
         fh.readline()
-
+        
     fpD = {}
     count = 0
     for line in fh:
@@ -33,21 +52,22 @@ def getFPdict_smi (fh, molID= None, fpType= 'ecfp', radius= 4, smilesI= 1, heade
         if len(fields) > smilesI:
             smiles = fields[smilesI]
         else: continue
-        mol = Chem.MolFromSmiles(smiles)
+        mol = MolFromSmiles(smiles)
         if mol is None: continue
 
         if molID is not None and len(fields) > molID: name = fields[molID]
         else: name = 'mol%0.8d'%count
 
-        fp = getFP(mol, fpType, radius)
+        mh=AddHs(mol, addCoords=False)
+        fp = getFP(mh, fpType, radius)
 
         fpD[name] = [fp, smiles]
     
     return fpD
 
-def getFPdict_sdf (fh, molID= None):
+def getFPdict_sdf (fh, molID= None, fpType= 'ecfp', radius= 4):
 
-    suppl = Chem.ForwardSDMolSupplier(fh,removeHs=False)
+    suppl = ForwardSDMolSupplier(fh,removeHs=False)
     fpD = {}
     count = 0
     for mol in suppl:
@@ -55,24 +75,34 @@ def getFPdict_sdf (fh, molID= None):
         if mol is None: continue
         name = getName(mol, count, molID)
         mol.UpdatePropertyCache(strict=False)
-        mh=Chem.AddHs(mol, addCoords=True)
-        fpD[name] = AllChem.GetMorganFingerprint(mh,4)
+        mh=AddHs(mol, addCoords=True)
+        fpD[name] = [getFP(mh, fpType, radius), MolToSmiles(mol)]
     
     return fpD
 
-def getFPdict (inFormat, fh, molID= None, smilesI= None):
+def getFPdict_pandas (df, molID= 'mol', fpType= 'ecfp', radius= None):
+
+    fp = '{}.{}'.format(fpType, radius)
+    fpD = [ getFP(AddHs(mol, addCoords=False), fpType, radius) \
+              for mol in df[molID] ]
+    
+    return fpD
+
+def getFPdict (inFormat, fh, molID= None, smilesI= None, fpType= 'ecfp', radius= 4, header= False):
 
     if inFormat == 'smi':
         if molID is not None:
             try:
-                i = int(molID)
+                molID = int(molID)
             except:
-                sys.stderr.write('The ID argument must be a column index if the input file is of smiles format.\n')
+                print ('The ID argument must be a column index if \
+                the input file is of smiles format.\n')
                 sys.exit()
-        else: i = None
-        return getFPdict_smi (fh, i, smilesI)
+        return getFPdict_smi (fh, molID= molID, smilesI= smilesI, fpType= fpType, radius= radius, header= header)
     elif inFormat == 'sdf':
-        return getFPdict_sdf (fh, molID)
+        return getFPdict_sdf (fh, molID, fpType, radius)
+    elif inFormat == 'df':
+        return getFPdict_pandas (fh, molID, fpType, radius)
 
 def RemoveSalts(mol, fh):
     f = open('HighQuality.smi')
@@ -81,12 +111,12 @@ def RemoveSalts(mol, fh):
     for line in f:
         cas, smi = line.rstrip().split('\t')
         try:
-            mol = Chem.MolFromSmiles(smi)
+            mol = MolFromSmiles(smi)
             mol = remover.StripMol(mol,dontRemoveEverything=True)
         except:
             pass
         else:
-            smi = Chem.MolToSmiles(mol)
+            smi = MolToSmiles(mol)
         fh.write('{}\t{}\n'.format(cas, smi))
     o.close()
 
@@ -94,7 +124,7 @@ def getName(mol, count=1, field=None):
 
     name = ''
 
-    if field is not None and mi.HasProp (field):
+    if field is not None and mol.HasProp (field):
         name = mol.GetProp(field)
     else:
         name = mol.GetProp('_Name')
@@ -103,8 +133,37 @@ def getName(mol, count=1, field=None):
         name = 'mol%0.8d'%count
 
     # get rid of strange characters
-    name = name.decode('utf-8')
-    name = name.encode('ascii','ignore')  # use 'replace' to insert '?'
+    #name = name.decode('utf-8')
+    #name = name.encode('ascii','ignore')  # use 'replace' to insert '?'
+
+    if ' ' in name:
+        name = name.replace(' ','_')
+
+    return name
+
+def getNameFromEmpty(suppl, count=1, field=None):
+
+    molText = suppl.GetItemText(count)
+    name = ''
+    if field is not None:
+        fieldName = '> <%s>' %field
+        found = False
+        for line in molText.split('\n'):
+            if line.rstrip() == fieldName:
+                found = True
+                continue
+            if found:
+                name = line.rstrip()
+                break
+    else:
+        name = molText.split('\n')[0].rstrip()
+        
+    if name == '':
+        name = 'mol%0.8d'%(count+1)
+
+    # get rid of strange characters
+    #name = name.decode('utf-8')
+    #name = name.encode('ascii','ignore')  # use 'replace' to insert '?'
 
     if ' ' in name:
         name = name.replace(' ','_')
@@ -137,7 +196,7 @@ def writePropertiesSD(fh, propD):
 def writeSDF(mol, fh, propD=None, ID=None):
     if ID:
         mol = setName(mol, ID)
-    fh.write(Chem.MolToMolBlock(mol))
+    fh.write(MolToMolBlock(mol))
     if propD == None:
         getProperties(mol)
     writeProperties(fh, propD)
@@ -153,10 +212,10 @@ def standardize(mol):
            (if False) The error message
     """
     try:
-        parent = standardise.run(Chem.MolToMolBlock(mol))
+        parent = standardise.run(MolToMolBlock(mol))
     except standardise.StandardiseException as e:
         if e.name == "no_non_salt":
-            parent = Chem.MolToMolBlock(mol)
+            parent = MolToMolBlock(mol)
         else:
             return (False, e.name)
 
@@ -325,12 +384,12 @@ def convert3DMol(mol, corinaPath= os.environ.get('CORINA_PATH'), clean= False):
     return (True, molO)
 
 def convert3DFile(fnameI, corinaPath= os.environ.get('CORINA_PATH'), clean= False):
-    """Converts the 2D structure of the molecule "moli" to 3D
+    """Converts the 2D structures in the SD file to 3D
 
         In this implementation, it uses CORINA from Molecular Networks
         The result is a tuple containing:
-           1) suucTrue/False: describes the success of the 3D conversion for this compound
-           2) (if True ) The name of the 3D molecule
+           1) True/False: describes the success of the 3D conversion for this compound
+           2) (if True ) The name of the output file with the 3D structures
               (if False) The error mesage
     """
 
