@@ -6,6 +6,6 @@ setup(name='phitools',
       url='https://github.com/phi-grib/phitools',
       author='Manuel Pastor and Elisabet Gregori',
       author_email='manuel.pastor@upf.edu',
-      license='Apache License, Version 2.0',
+      license='',
       packages=['phitools'],
       zip_safe=False)
