@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from rdkit import Chem, DataStructs
-from rdkit.Chem import *
 from standardiser import standardise
 
 from pathlib import Path
@@ -19,7 +18,7 @@ def getSmiSupplier(fname, molID, smilesI, header):
             id = fields[molID]
 
             try:
-                mol = MolFromSmiles(smi)
+                mol = Chem.MolFromSmiles(smi)
             except:
                 continue
             if mol is not None:
@@ -52,7 +51,7 @@ def getFPdict_smi (fh, molID= None, fpType= 'ecfp', radius= 4, smilesI= 1, heade
         if len(fields) > smilesI:
             smiles = fields[smilesI]
         else: continue
-        mol = MolFromSmiles(smiles)
+        mol = Chem.MolFromSmiles(smiles)
         if mol is None: continue
 
         if molID is not None and len(fields) > molID: name = fields[molID]
@@ -76,7 +75,7 @@ def getFPdict_sdf (fh, molID= None, fpType= 'ecfp', radius= 4):
         name = getName(mol, count, molID)
         mol.UpdatePropertyCache(strict=False)
         mh=AddHs(mol, addCoords=True)
-        fpD[name] = [getFP(mh, fpType, radius), MolToSmiles(mol)]
+        fpD[name] = [getFP(mh, fpType, radius), Chem.MolToSmiles(mol)]
     
     return fpD
 
@@ -111,12 +110,12 @@ def RemoveSalts(mol, fh):
     for line in f:
         cas, smi = line.rstrip().split('\t')
         try:
-            mol = MolFromSmiles(smi)
+            mol = Chem.MolFromSmiles(smi)
             mol = remover.StripMol(mol,dontRemoveEverything=True)
         except:
             pass
         else:
-            smi = MolToSmiles(mol)
+            smi = Chem.MolToSmiles(mol)
         fh.write('{}\t{}\n'.format(cas, smi))
     o.close()
 
@@ -185,7 +184,7 @@ def readSmi(fname, smiI, nameI):
             fields = line.rstrip().split(sep)
             smi = fields[smiI]
             name = fields[nameI]
-            mol = MolFromSmiles(smi)
+            mol = Chem.MolFromSmiles(smi)
             setName(mol, name)
     return suppl
 
@@ -196,7 +195,7 @@ def writePropertiesSD(fh, propD):
 def writeSDF(mol, fh, propD=None, ID=None):
     if ID:
         mol = setName(mol, ID)
-    fh.write(MolToMolBlock(mol))
+    fh.write(Chem.MolToMolBlock(mol))
     if propD == None:
         getProperties(mol)
     writeProperties(fh, propD)
@@ -212,10 +211,10 @@ def standardize(mol):
            (if False) The error message
     """
     try:
-        parent = standardise.run(MolToMolBlock(mol))
+        parent = standardise.run(Chem.MolToMolBlock(mol))
     except standardise.StandardiseException as e:
         if e.name == "no_non_salt":
-            parent = MolToMolBlock(mol)
+            parent = Chem.MolToMolBlock(mol)
         else:
             return (False, e.name)
 
