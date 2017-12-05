@@ -6,8 +6,39 @@ from standardiser import standardise
 from pathlib import Path
 import sys, os, tempfile
 
+try:
+    __import__('EPA')
+except ImportError:
+    useEPA = False
+    sys.stderr.write('\n*** Could not find EPA module. Will use only the CACTVS web service. ***\n\n')
+else:
+    useEPA = True
+    from EPA import comptox_lookup, comptox_link
+
 rand_str = lambda n: ''.join([random.choice(string.ascii_lowercase) for i in range(n)])
 
+def resolveCAS(cas):
+    # First try using the CACTVS web service to retrieve the SMILES
+    try:
+        smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+cas+'/smiles')
+        smi = smi.readline().decode("utf-8").rstrip().replace('|', '')
+    except:
+        smi = None
+        
+    # Then try to use Francis Atkinson's code to call EPA if it's available
+    if useEPA and smi == None:
+        try:
+            tmp = comptox_lookup(cas)
+        except:
+            sys.stderr.write('Connection error at molecule {}\n'.format(cas))
+            tmp = None
+            
+        if tmp is not None:
+            smi = tmp.smiles
+        else:
+            sys.stderr.write('Could not resolve {}\n'.format(cas))
+            smi = None
+    
 def getSmiSupplier(fname, molID, smilesI, header):
     with open(fname) as f:
         if header: f.readline()
