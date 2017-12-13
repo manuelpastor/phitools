@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from rdkit import Chem, DataStructs
+from rdkit.Chem import AllChem
 from standardiser import standardise
 
 from pathlib import Path
@@ -10,7 +11,7 @@ try:
     __import__('EPA')
 except ImportError:
     useEPA = False
-    sys.stderr.write('\n*** Could not find EPA module. Will use only the CACTVS web service. ***\n\n')
+    sys.stderr.write('\n*** Could not find EPA module. Will use only the CACTVS web service to resolve CAS number structures. ***\n\n')
 else:
     useEPA = True
     from EPA import comptox_lookup, comptox_link
@@ -88,7 +89,7 @@ def getFPdict_smi (fh, molID= None, fpType= 'ecfp', radius= 4, smilesI= 1, heade
         if molID is not None and len(fields) > molID: name = fields[molID]
         else: name = 'mol%0.8d'%count
 
-        mh=AddHs(mol, addCoords=False)
+        mh=Chem.AddHs(mol, addCoords=False)
         fp = getFP(mh, fpType, radius)
 
         fpD[name] = [fp, smiles]
@@ -105,7 +106,7 @@ def getFPdict_sdf (fh, molID= None, fpType= 'ecfp', radius= 4):
         if mol is None: continue
         name = getName(mol, count, molID)
         mol.UpdatePropertyCache(strict=False)
-        mh=AddHs(mol, addCoords=True)
+        mh=Chem.AddHs(mol, addCoords=True)
         fpD[name] = [getFP(mh, fpType, radius), Chem.MolToSmiles(mol)]
     
     return fpD
@@ -113,7 +114,7 @@ def getFPdict_sdf (fh, molID= None, fpType= 'ecfp', radius= 4):
 def getFPdict_pandas (df, molID= 'mol', fpType= 'ecfp', radius= None):
 
     fp = '{}.{}'.format(fpType, radius)
-    fpD = [ getFP(AddHs(mol, addCoords=False), fpType, radius) \
+    fpD = [ getFP(Chem.AddHs(mol, addCoords=False), fpType, radius) \
               for mol in df[molID] ]
     
     return fpD
