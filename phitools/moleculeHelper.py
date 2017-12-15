@@ -229,8 +229,8 @@ def writeSDF(mol, fh, propD=None, ID=None):
         mol = setName(mol, ID)
     fh.write(Chem.MolToMolBlock(mol))
     if propD == None:
-        getProperties(mol)
-    writeProperties(fh, propD)
+        propD = getProperties(mol)
+    writePropertiesSD(fh, propD)
     fh.write('$$$$\n')
 
 def standardize(mol):
