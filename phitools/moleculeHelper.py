@@ -98,7 +98,7 @@ def getFPdict_smi (fh, molID= None, fpType= 'ecfp', radius= 4, smilesI= 1, heade
 
 def getFPdict_sdf (fh, molID= None, fpType= 'ecfp', radius= 4):
 
-    suppl = ForwardSDMolSupplier(fh,removeHs=False)
+    suppl = Chem.ForwardSDMolSupplier(fh,removeHs=False)
     fpD = {}
     count = 0
     for mol in suppl:
