@@ -30,6 +30,8 @@ from rdkit.Chem import AllChem, SaltRemover
 remover = SaltRemover.SaltRemover()
 
 from moleculeHelper import *
+from compoundDB import querytools as qt
+from compoundDB import inputtools as it
 
 try:
     __import__('EPA')
@@ -79,15 +81,31 @@ def getStructure(args):
 
     # for names ...
     else:
+        # First try using compounds DB to retrieve the SMILES
+        try:
+            conn = it.openconnection(host='172.20.16.76', dbname='compounds', user='postgres', password=args.dbpass)
+        except:
+            sys.stdout.write('Could not connect to the compound DB.\n')
+        else:
+            # If the connection to the compounds DB is available check there first if the structures have already been resolved
+            df = qt.getSubstancesFromSynonyms(conn, queries)
+            df = df[['synonym', 'smiles']]
+            dfound = df.dropna().groupby('synonym').first().reset_index()
+            for index, row in dfound.iterrows():
+                writeStructure(row['synonym'], row['smiles'], args)
+
+            # Keep the ones that could not be resolved
+            queries = queries.difference(set(dfound['synonym']))
+
         for q in queries:
-            # First try using the CACTVS web service to retrieve the SMILES
+            # Then try using the CACTVS web service to retrieve the SMILES
             try:
                 smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+q+'/smiles')
                 smi = smi.readline().decode("utf-8").rstrip().replace('|', '')
             except:
                 smi = ''
                 
-            # Then try to use Francis Atkinson's code to call EPA if it's available
+            # And finally try to use Francis Atkinson's code to call EPA if it's available
             if useEPA and smi == '':
                 print ('EPA')
                 try:
@@ -127,6 +145,7 @@ def main ():
     group2.add_argument('-m', '--sdf', action='store_const', dest='format', const='sdf', help='The input format is an SD file.')
     parser.add_argument('-r', '--removesalts', action='store_true', help='Remove salts from the structure.')
     parser.add_argument('-f', '--field', type=str, default='name', help='Field in the output SD file that will contain the unique ID (default= name).')
+    parser.add_argument('-p', '--dbpass', type=str, help='Password to connect to the compound DB.')
     parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.sdf', help='Output file name (default: output.sdf)')
     args = parser.parse_args()
     
