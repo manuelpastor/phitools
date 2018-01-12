@@ -3,6 +3,7 @@
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 from standardiser import standardise
+from compoundDB import querytools as qt
 
 from pathlib import Path
 import sys, os, tempfile
@@ -18,27 +19,37 @@ else:
 
 rand_str = lambda n: ''.join([random.choice(string.ascii_lowercase) for i in range(n)])
 
-def resolveCAS(cas):
-    # First try using the CACTVS web service to retrieve the SMILES
+def resolveCAS(cas, conn=None):
+    # First try using compounds DB to retrieve the SMILES
+    if not conn:
+        sys.stdout.write('Could not connect to the compound DB.\n')
+    else:
+        # If the connection to the compounds DB is available check there first if the structures have already been resolved
+        smi = qt.getStructureFromSyn(conn, cas)
+
+    
+    # Then try using the CACTVS web service to retrieve the SMILES
     try:
         smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+cas+'/smiles')
         smi = smi.readline().decode("utf-8").rstrip().replace('|', '')
     except:
-        smi = None
+        smi = ''
         
-    # Then try to use Francis Atkinson's code to call EPA if it's available
-    if useEPA and smi == None:
+    # And finally try to use Francis Atkinson's code to call EPA if it's available
+    if useEPA and smi == '':
         try:
             tmp = comptox_lookup(cas)
         except:
-            sys.stderr.write('Connection error at molecule {}\n'.format(cas))
+            sys.stdout.write('Connection error at molecule {}\n'.format(cas))
             tmp = None
             
         if tmp is not None:
             smi = tmp.smiles
         else:
-            sys.stderr.write('Could not resolve {}\n'.format(cas))
+            sys.stdout.write('Could not resolve {}\n'.format(cas))
             smi = None
+            
+    return smi
     
 def getSmiSupplier(fname, molID, smilesI, header):
     with open(fname) as f:
@@ -135,6 +146,10 @@ def getFPdict (inFormat, fh, molID= None, smilesI= None, fpType= 'ecfp', radius=
     elif inFormat == 'df':
         return getFPdict_pandas (fh, molID, fpType, radius)
 
+#def sim(fp1, fp2, simType='Tanimoto'):
+#    if simType == '':
+#    return 
+
 def RemoveSalts(mol, fh):
     f = open('HighQuality.smi')
     o = open('HighQuality.NoSalts.smi', 'w')
@@ -151,24 +166,29 @@ def RemoveSalts(mol, fh):
         fh.write('{}\t{}\n'.format(cas, smi))
     o.close()
 
-def getName(mol, count=1, field=None):
+def getName(mol, count=1, field=None, suppl= None):
 
-    name = ''
-
-    if field is not None and mol.HasProp (field):
-        name = mol.GetProp(field)
+    if not mol and suppl:
+        # The molecule object is empty but it comes from an 
+        # SD file and the suppl is provided
+        name = getNameFromEmpty(suppl, count, field)
     else:
-        name = mol.GetProp('_Name')
-        
-    if name == '':
-        name = 'mol%0.8d'%count
+        name = ''
 
-    # get rid of strange characters
-    #name = name.decode('utf-8')
-    #name = name.encode('ascii','ignore')  # use 'replace' to insert '?'
+        if field and mol.HasProp (field):
+            name = mol.GetProp(field)
+        else:
+            name = mol.GetProp('_Name')
+            
+        if name == '':
+            name = 'mol%0.8d'%count
 
-    if ' ' in name:
-        name = name.replace(' ','_')
+        # get rid of strange characters
+        #name = name.decode('utf-8')
+        #name = name.encode('ascii','ignore')  # use 'replace' to insert '?'
+
+        if ' ' in name:
+            name = name.replace(' ','_')
 
     return name
 
