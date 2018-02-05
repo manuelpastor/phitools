@@ -62,6 +62,11 @@ def pivotone(args, coli):
         continue
 
     field = fields[coli].strip()
+    if field == '':
+      # Empty cell
+      newLine.append('')
+      args.out.write('{}\n'.format(sep.join(newLine)))
+      continue
     while field[-1] == args.sep:
       field = field.strip(args.sep)
     
