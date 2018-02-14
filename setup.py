@@ -3,9 +3,9 @@ from setuptools import setup
 setup(name='phitools',
       version='0.1',
       description='Collection of simple tools used for manipulating series of chemical compounds',
-      url='https://github.com/phi-grib/phitools',
+      url='https://github.com/bet-gregori/phitools',
+      download_url = 'https://github.com/bet-gregori/phitools/archive/v0.3.tar.gz'
       author='Manuel Pastor and Elisabet Gregori',
       author_email='manuel.pastor@upf.edu',
-      license='',
       packages=['phitools'],
       zip_safe=False)
