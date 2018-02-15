@@ -27,8 +27,7 @@ import os, sys, argparse, re
 
 sep = '\t'
 
-def addData (args): #sdf_id, data_id, prop_id, out_id):
-    #args.sdf, args.data, args.id, args.out
+def addData (args): 
 
     ###################
     # Read csv file
@@ -96,7 +95,7 @@ def addData (args): #sdf_id, data_id, prop_id, out_id):
     print("Output file has",len(suppl1),"molecule(s)")
 
 def main ():
-    parser = argparse.ArgumentParser(description='Add data from an input SD file\'s fields into a table file. One of the fields must contain a unique id which is used to identify the compounds in the output data file. This field can be specified using the parameter -i | --id.')
+    parser = argparse.ArgumentParser(description='Add the data from an input SD file\'s fields into a table file. One of the fields must contain a unique id which is used to identify the compounds in the output data file. This field can be specified using the parameter -i | --id.')
     parser.add_argument('-f', '--sdf', type=argparse.FileType('r'), help='SD file', required=True)
     parser.add_argument('-d', '--data', type=argparse.FileType('r'), help='Data file', required=True)
     parser.add_argument('-i', '--id', type=str, help='moleculeID', required=True)

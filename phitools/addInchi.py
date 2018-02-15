@@ -24,7 +24,7 @@
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from moleculeHelper import *
+from phitools import moleculeHelper as mh
 import os, sys, argparse
 
 def addInchi (args):
@@ -36,9 +36,6 @@ def addInchi (args):
     for mol in suppl:
 
         if mol is None: continue
-        
-        args.out.write(Chem.MolToMolBlock(mol,kekulize=False))
-        writePropertiesSD(args.out, getProperties(mol))
 
         try:
             inchi = Chem.MolToInchi(mol)
@@ -49,9 +46,10 @@ def addInchi (args):
         if inchi is None : inchi='na'
         if inkey is None : inkey='na'
 
-        args.out.write('>  <inchi>\n'+inchi+'\n\n')
-        args.out.write('>  <inchikey>\n'+inkey+'\n\n')
-        args.out.write('$$$$\n')
+        mol.SetProp('Inchi', inchi)
+        mol.SetProp('InchiKey', inkey)
+
+        mh.writeSDF(mol, args.out)
 
     args.sdf.close()
     args.out.close()

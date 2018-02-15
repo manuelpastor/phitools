@@ -26,13 +26,14 @@ import urllib.request, urllib.parse, urllib.error
 import os, sys, argparse
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from phitools import moleculeHelper as mh
 
 def getSDF(args):
-    #out,data,iformat,idname,header):
 
     vals = []
     noms = []
-    args.data.readline()  # Header
+    if args.header:
+        args.data.readline()  # Header
     counter = 1
     query = [line.rstrip().split('\t')[args.column-1] for line in args.data]
     args.data.close()
@@ -52,41 +53,30 @@ def getSDF(args):
                 pass
         writer.close()
 
-        return
+    else:
+        # for names convert to SMILES, in either case use MolFromSmiles
+        for q in query:
 
-    # for names convert to SMILES, in either case use MolFromSmiles
-    #for v,n in zip(vals,noms):
-    for q in query:
+            if args.identifier:
+                smi1 = mh.resolveCAS(q)                
+            elif args.smiles:
+                smi1 = q
 
-        if args.identifier:
-            try:
-                smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+q+'/smiles')
-            except:
+            if smi1 == None or ('Page not found' in smi1):
                 continue
-            smi1 = smi.readline().decode("utf-8").rstrip()
-        elif args.smiles:
-            smi1 = q
-
-        if smi1 == None or ('Page not found' in smi1):
-            continue
-        
-        try:
-            m = Chem.MolFromSmiles(smi1)
-            Chem.AllChem.Compute2DCoords(m)
-        except:
-            print('error processing', q)
-            continue
             
-        m.SetProp("_Name",q)
-        mb = Chem.MolToMolBlock(m)        
+            try:
+                m = Chem.MolFromSmiles(smi1)
+                Chem.AllChem.Compute2DCoords(m)
+            except:
+                print('error processing', q)
+                continue
+                
+            m.SetProp(args.field, q)
+            m.SetProp("smiles", smi1)
 
-        args.out.write(mb)
-
-        args.out.write('>  <'+args.field+'>\n'+q+'\n\n')
-        args.out.write('>  <smiles>\n'+smi1+'\n\n')
-
-        args.out.write('$$$$\n')        
-    args.out.close()
+            mh.writeSDF(m, args.out, ID= q)  
+        args.out.close()
 
 def main ():
 

@@ -24,26 +24,24 @@
 
 from rdkit import Chem
 import os, sys, re, argparse
-from moleculeHelper import *
+from phitools import moleculeHelper as mh
 
 sep = '\t'
 
 def addData (args):
     
-    IDfield = args.id.replace(" ","") # delete whitespaces in the compound identifier 
-
     ##############################################
     # Search compound ID column in the data file #
     ##############################################
     header = args.data.readline().rstrip().split(sep)  
-    if not IDfield in header:        
+    if not args.id in header:        
         for col in header:
-            match=re.search(IDfield[:5], col)
+            match=re.search(args.id[:5], col)
             if match:
                 sys.stderr.write("Molecule identifier not found among data file\'s column names, please try again. However, a similar column name was found: {}\n".format(col))
                 return
             else:
-                match=re.search(IDfield[len(IDfield)-5:], col)
+                match=re.search(args.id[len(args.id)-5:], col)
                 if match:
                     sys.stderr.write("Molecule identifier not found among data file\'s column names, please try again. However, a similar column name was found: {}\n".format(col))
                     return                
@@ -52,7 +50,7 @@ def addData (args):
             sys.stderr.write("Molecule identifier not found among data file\'s column names.\n")
             return
     else:
-        ind=header.index(IDfield)
+        ind=header.index(args.id)
 
     ###################
     # Read data file
@@ -76,11 +74,8 @@ def addData (args):
         inL += 1
         if mol is None: continue
             
-        propD = getProperties(mol)
-        if IDfield not in propD.keys():
-            cmpdID = getName(mol)
-        else:
-            cmpdID = mol.GetProp(IDfield)
+        cmpdID = mh.getName(mol, field= args.id)
+        propD = mh.getProperties(mol)
             
         if cmpdID not in dataD:
             # Add empty fields
@@ -88,7 +83,7 @@ def addData (args):
                 if field not in propD:
                     propD[field] = 'NA'
             outL += 1
-            writeSDF(mol, args.out, propD, ID=cmpdID)
+            mh.writeSDF(mol, args.out, propD, ID=cmpdID)
         else:
             # Add field values from the data file
             for field in dataD[cmpdID]:
@@ -97,7 +92,7 @@ def addData (args):
                     field = field+' (1)'
                 propD[field] = fieldValue
             outL += 1
-            writeSDF(mol, args.out, propD, ID=cmpdID)
+            mh.writeSDF(mol, args.out, propD, ID=cmpdID)
         
     args.sdf.close()
     args.out.close()

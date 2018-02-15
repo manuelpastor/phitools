@@ -24,7 +24,7 @@
 
 from rdkit import Chem, RDLogger
 from rdkit.Chem import AllChem, Draw, Descriptors
-from moleculeHelper import *
+from phitools import moleculeHelper as mh
 import os, sys, argparse
 
 sep = '\t'
@@ -39,7 +39,7 @@ def writeStructure(q, mol, args):
             except:
                 sys.stdout.write('Error processing', q)
 
-        writeSDF(mol, args.out, {args.field: q}, q)
+        mh.writeSDF(mol, args.out, {args.field: q}, q)
         
     elif args.smi:
         args.out.write('{}\n'.format('\t'.join([q, mol])))
@@ -94,10 +94,7 @@ def findDuplicates (args):
             except:
                 continue
 
-            if args.id:
-                name = mol.getProp(args.id)
-            else:
-                name = getName(mol, counter)
+            name = mh.getName(mol, count= counter, field= args.id)
 
             if inkey not in iddict:
                 iddict[inkey] = [[name], smiles, mol]
@@ -122,7 +119,7 @@ def findDuplicates (args):
         else:
             mol = iddict[inkey][2]
             fieldsD = {'IDs': ids, 'InChI key': inkey, 'smiles': smiles}
-            writeSDF(mol, args.out, fieldsD, inkey)
+            mh.writeSDF(mol, args.out, fieldsD, inkey)
     args.out.close()
 
 def main ():
@@ -130,10 +127,10 @@ def main ():
     parser = argparse.ArgumentParser(description='Find duplicated molecules. In the output file, the first columns present the properties of the first molecule duplicated, the last columns contain data about the second molecule identified.')
     parser.add_argument('-f', '--fn', type=argparse.FileType('rb'), help='Input file', required=True)
     parser.add_argument('-i', '--id', type=str, help='If the input is an SD file, specify the field (if any) with the molecule ID. If the input has smiles, specify the column with the molecule ID.')
-    parser.add_argument('-f', '--format', action='store', dest='type', choices=['smi', 'sdf'], default='smi', help='Specify the input format (smiles strings (default) or SD file).')
+    parser.add_argument('-x', '--format', action='store', dest='type', choices=['smi', 'sdf'], default='smi', help='Specify the input format (smiles strings (default) or SD file).')
     parser.add_argument('-c', '--col', type=int, default=1, help='If the input file has smiles, indicate which column contains the smiles strings.')
     parser.add_argument('-n', '--noheader', action='store_false', dest='header', help='Input data file doesn\'t have a header line.')
-    parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='duplicates.txt', help='Output file name (default: duplicates.txt)')
+    parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='unique.txt', help='Output file name (default: unique.txt)')
     args = parser.parse_args()
 
     if args.type == 'smi':

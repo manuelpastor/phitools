@@ -15,7 +15,7 @@ except ImportError:
     sys.stderr.write('\n*** Could not find EPA module. Will use only the CACTVS web service to resolve CAS number structures. ***\n\n')
 else:
     useEPA = True
-    from EPA import comptox_lookup, comptox_link
+    import EPA
 
 rand_str = lambda n: ''.join([random.choice(string.ascii_lowercase) for i in range(n)])
 
@@ -32,13 +32,14 @@ def resolveCAS(cas, conn=None):
     try:
         smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+cas+'/smiles')
         smi = smi.readline().decode("utf-8").rstrip().replace('|', '')
+        smi = smi.readline().decode("utf-8").rstrip()
     except:
         smi = ''
         
     # And finally try to use Francis Atkinson's code to call EPA if it's available
     if useEPA and smi == '':
         try:
-            tmp = comptox_lookup(cas)
+            tmp = EPA.comptox_lookup(cas)
         except:
             sys.stdout.write('Connection error at molecule {}\n'.format(cas))
             tmp = None

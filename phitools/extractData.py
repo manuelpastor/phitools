@@ -23,7 +23,7 @@
 
 import os, sys, argparse
 from rdkit import Chem
-from moleculeHelper import *
+from phitools import moleculeHelper as mh
 
 def extractAll (args):
 
@@ -38,8 +38,8 @@ def extractAll (args):
         count += 1
         if m is None: continue
         fields = fields.union(set(m.GetPropNames())) # Store all field names in the SD file
-        name = getName(m, count)
-        bufferD[name] = getProperties(m)
+        name = mh.getName(m, count)
+        bufferD[name] = mh.getProperties(m)
         names.append(name)
 
     fields = list(fields)
@@ -68,7 +68,7 @@ def extractField (args):
     for m in suppl:
         count += 1
         if m is None: continue
-        name = getName(m, count)
+        name = mh.getName(m, count)
         if m.HasProp (args.field):
             value = m.GetProp(args.field)
         else:
@@ -81,7 +81,7 @@ def extractNames (args):
     for m in suppl:
         count +=1
         if m is None: continue
-        name = getName(m, count)
+        name = mh.getName(m, count)
         args.out.write('{}\n'.format(name))
 
 

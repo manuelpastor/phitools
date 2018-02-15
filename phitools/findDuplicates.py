@@ -25,7 +25,7 @@
 from rdkit import Chem
 from rdkit import RDLogger
 from rdkit.Chem import AllChem,Draw,Descriptors
-from moleculeHelper import *
+from phitools import moleculeHelper as mh
 import os, sys, argparse
 
 sep = '\t'
@@ -82,10 +82,7 @@ def findDuplicates (args):
             except:
                 continue
 
-            if args.id:
-                name = mol.getProp(args.id)
-            else:
-                name = getName(mol, counter)
+            name = mh.getName(mol, count= counter, field= args.id)
 
             idlist.append(inkey[:-3])
             nmlist.append(name)

@@ -29,7 +29,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, SaltRemover
 remover = SaltRemover.SaltRemover()
 
-from moleculeHelper import *
+from phitools import moleculeHelper as mh
 from compoundDB import querytools as qt
 from compoundDB import inputtools as it
 
@@ -52,7 +52,7 @@ def writeStructure(q, mol, args):
             except:
                 sys.stdout.write('Error processing', q)
 
-        writeSDF(mol, args.out, {args.field: q}, q)
+        mh.writeSDF(mol, args.out, {args.field: q}, q)
         
     elif args.format == 'smi':
         args.out.write('{}\n'.format('\t'.join([q, mol])))
@@ -141,12 +141,12 @@ def main ():
     group1.add_argument('-x', '--identifier', action='store_const', dest='type', const= 'id', help='The input format will be compound indentifiers (default).', default= 'identifier')
     group1.add_argument('-i', '--inchis', action='store_const', dest='type', const= 'inchi', help='The input format will be molecule InChis.')
     group2 = parser.add_mutually_exclusive_group()
-    group2.add_argument('-s', '--smi', action='store_const', dest='format', const='smi', default='smi', help='The input format is a file with smiles strings (default).')
-    group2.add_argument('-m', '--sdf', action='store_const', dest='format', const='sdf', help='The input format is an SD file.')
+    group2.add_argument('-s', '--smi', action='store_const', dest='format', const='smi', default='smi', help='The output format is a file with smiles strings (default).')
+    group2.add_argument('-m', '--sdf', action='store_const', dest='format', const='sdf', help='The output format is an SD file.')
     parser.add_argument('-r', '--removesalts', action='store_true', help='Remove salts from the structure.')
     parser.add_argument('-f', '--field', type=str, default='name', help='Field in the output SD file that will contain the unique ID (default= name).')
     parser.add_argument('-p', '--dbpass', type=str, help='Password to connect to the compound DB.')
-    parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.sdf', help='Output file name (default: output.sdf)')
+    parser.add_argument('-o', '--out', type=argparse.FileType('w+'), default='output.txt', help='Output file name (default: output.txt)')
     args = parser.parse_args()
     
     args.column = args.column-1

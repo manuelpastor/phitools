@@ -2,7 +2,7 @@
 
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
-from moleculeHelper import *
+from phitools import moleculeHelper as mh
 import argparse, sys
 
 sep = '\t'
@@ -15,12 +15,12 @@ def compare(args):
     fpType = args.descriptor[0:4]
     fpRadius = int(args.descriptor[4:])
 
-    fpA = getFPdict (args.format, args.filea, molID= args.id, smilesI= args.col, header= args.header, fpType= fpType, radius= fpRadius)
+    fpA = mh.getFPdict (args.format, args.filea, molID= args.id, smilesI= args.col, header= args.header, fpType= fpType, radius= fpRadius)
     namesA = list(fpA.keys())
     nA = len(namesA)
 
     if args.fileb is not None:
-        fpB = getFPdict (args.format, args.fileb, molID= args.id, smilesI= args.col, header= args.header, fpType= fpType, radius= fpRadius)
+        fpB = mh.getFPdict (args.format, args.fileb, molID= args.id, smilesI= args.col, header= args.header, fpType= fpType, radius= fpRadius)
         namesB = list(fpB.keys())
         nB = len(namesB)
     
@@ -65,9 +65,9 @@ def compare(args):
     # Work with two input files
     else:
         for name in namesA:
-            simD[name] = ['', startSim]
+            simD[name] = [None, '', startSim]
         for name in namesB:
-            simD[name] = ['', startSim]
+            simD[name] = [None, '', startSim]
 
         for i in range(nA):
             name1 = namesA[i]
@@ -76,7 +76,7 @@ def compare(args):
                 name2 = namesB[j]
                 [fp2, smiles2] = fpB[name2]
 
-                sim = DataStructs.TanimotoSimilarity(fp1, fp2)
+                sim = DataStructs.TanimotoSimilarity(fp1, fp2) #DataStructs.DiceSimilarity(fp1, fp2)
                 if args.cutoff is not None and sim < args.cutoff:
                     continue
 
@@ -84,13 +84,17 @@ def compare(args):
                     args.out.write('{}\t{}\t{}\t{}\t{}\n'.format(name1, smiles1, name2, smiles2, sim))
                 else:
                     if args.sim == 'max':
-                        if sim > simD[name1][1]: simD[name1] = [name2, smiles2, sim]
+                        if sim > simD[name1][-1]: simD[name1] = [name2, smiles2, sim]
                     else:
-                        if sim < simD[name1][1]: simD[name1] = [name2, smiles2, sim]
+                        if sim < simD[name1][-1]: simD[name1] = [name2, smiles2, sim]
 
         if args.sim != 'all':
             for name in simD:
-                args.out.write('{}\t{}\t{}\t{}\n'.format(name, simD[name][0], simD[name][1], simD[name][2]))
+                if simD[name][0] is None:
+                    continue
+                buffer = [name]
+                buffer.extend(simD[name])
+                args.out.write('{}\n'.format('\t'.join(str(v) for v in buffer)))
                         
 
 

@@ -23,7 +23,7 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
-from moleculeHelper import *
+from phitools import moleculeHelper as mh
 import os, sys, argparse, re
 
 sep = '\t'
@@ -36,7 +36,7 @@ def fields2file (args):
     for mol in suppl:
         # Store all molecules' field names to write the output file's header
         if mol is None: continue
-        propS = propS.union(set(getProperties(mol).keys()))
+        propS = propS.union(set(mh.getProperties(mol).keys()))
         molL.append(mol)
 
     propL = ['ID']
@@ -49,11 +49,8 @@ def fields2file (args):
     count = 0
     for mol in molL:
         count += 1
-        propD = getProperties(mol)
-        if args.id is not None and args.id in propD:
-            name = propD[args.id]
-        else:
-            name = getName(mol, count)
+        name = mh.getName(mol, count= count, field= args.id)
+        propD = mh.getProperties(mol)
         
         line = [name]
         for prop in propL[1:]:
