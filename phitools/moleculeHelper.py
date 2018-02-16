@@ -25,7 +25,6 @@
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
 from standardiser import standardise
-from compoundDB import querytools as qt
 
 from pathlib import Path
 import sys, os, tempfile
@@ -38,6 +37,16 @@ except ImportError:
 else:
     useEPA = True
     import EPA
+
+try:
+    __import__('compoundDB')
+except ImportError:
+    useDB = False
+else:
+    useDB = True
+    sys.stderr.write('\n*** CompoundDB module found. Will check the synonyms table to resolve CAS. ***\n\n')
+    from compoundDB import querytools as qt
+
 
 rand_str = lambda n: ''.join([random.choice(string.ascii_lowercase) for i in range(n)])
 
