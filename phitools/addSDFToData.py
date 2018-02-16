@@ -23,7 +23,7 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
-import os, sys, argparse, re
+import argparse, re
 
 sep = '\t'
 

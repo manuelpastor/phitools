@@ -23,14 +23,13 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from phitools import moleculeHelper as mh
-import os, sys, argparse
+import argparse
 
-def addInchi (args):
+def addInchi (sdfh, outfh):
 
     # Read SDF
-    suppl = Chem.ForwardSDMolSupplier(args.sdf,removeHs=False, sanitize=False)
+    suppl = Chem.ForwardSDMolSupplier(sdfh,removeHs=False, sanitize=False)
 
     # Create header    
     for mol in suppl:
@@ -49,10 +48,10 @@ def addInchi (args):
         mol.SetProp('Inchi', inchi)
         mol.SetProp('InchiKey', inkey)
 
-        mh.writeSDF(mol, args.out)
+        mh.writeSDF(mol, outfh)
 
-    args.sdf.close()
-    args.out.close()
+    sdfh.close()
+    outfh.close()
 
 def main ():
     parser = argparse.ArgumentParser(description='Add Inchi into a field for each molecule in the input SD file.')
@@ -60,7 +59,7 @@ def main ():
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.sdf', help='Output SD file name (default: output.sdf)')
     args = parser.parse_args()
 
-    addInchi (args)
+    addInchi (args.sdf, args.out)
 
 if __name__ == '__main__':    
     main()

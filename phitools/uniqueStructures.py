@@ -22,10 +22,10 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
-from rdkit import Chem, RDLogger
-from rdkit.Chem import AllChem, Draw, Descriptors
+from rdkit import Chem
+from rdkit.Chem import AllChem
 from phitools import moleculeHelper as mh
-import os, sys, argparse
+import sys, argparse
 
 sep = '\t'
 
@@ -45,9 +45,6 @@ def writeStructure(q, mol, args):
         args.out.write('{}\n'.format('\t'.join([q, mol])))
 
 def findDuplicates (args): 
-
-    lg = RDLogger.logger()
-    lg.setLevel(RDLogger.ERROR)
 
     iddict = {}
 

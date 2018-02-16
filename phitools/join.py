@@ -22,7 +22,7 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
-import os, sys, argparse
+import sys, argparse
 
 sep = '\t'
 

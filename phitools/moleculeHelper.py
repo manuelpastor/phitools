@@ -22,12 +22,11 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
-from rdkit import Chem, DataStructs
+from rdkit import Chem
 from rdkit.Chem import AllChem
 from standardiser import standardise
 
-from pathlib import Path
-import sys, os, tempfile
+import sys, os
 
 try:
     __import__('EPA')

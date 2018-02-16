@@ -23,25 +23,25 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
-import os, sys, re, argparse
+import sys, re, argparse
 from phitools import moleculeHelper as mh
 
 sep = '\t'
 
-def addData (args):
+def addData (sdfh, datafh, id, outfh):
     
     ##############################################
     # Search compound ID column in the data file #
     ##############################################
-    header = args.data.readline().rstrip().split(sep)  
-    if not args.id in header:        
+    header = datafh.readline().rstrip().split(sep)  
+    if not id in header:        
         for col in header:
-            match=re.search(args.id[:5], col)
+            match=re.search(id[:5], col)
             if match:
                 sys.stderr.write("Molecule identifier not found among data file\'s column names, please try again. However, a similar column name was found: {}\n".format(col))
                 return
             else:
-                match=re.search(args.id[len(args.id)-5:], col)
+                match=re.search(id[len(id)-5:], col)
                 if match:
                     sys.stderr.write("Molecule identifier not found among data file\'s column names, please try again. However, a similar column name was found: {}\n".format(col))
                     return                
@@ -50,22 +50,22 @@ def addData (args):
             sys.stderr.write("Molecule identifier not found among data file\'s column names.\n")
             return
     else:
-        ind=header.index(args.id)
+        ind=header.index(id)
 
     ###################
     # Read data file
     ###################
     dataD = {}
-    for line in args.data:
+    for line in datafh:
         line=line.rstrip().split(sep)
         dataD[line[ind]] = {header[i]:line[i] for i in range(len(header)) if i != ind}      
-    args.data.close()  
+    datafh.close()  
         
     ###################
     # Process SDFile  #
     ###################
   
-    suppl = Chem.ForwardSDMolSupplier(args.sdf, removeHs=False, sanitize=False)
+    suppl = Chem.ForwardSDMolSupplier(sdfh, removeHs=False, sanitize=False)
 
     inL = 0
     outL = 0    
@@ -74,7 +74,7 @@ def addData (args):
         inL += 1
         if mol is None: continue
             
-        cmpdID = mh.getName(mol, field= args.id)
+        cmpdID = mh.getName(mol, field= id)
         propD = mh.getProperties(mol)
             
         if cmpdID not in dataD:
@@ -83,7 +83,7 @@ def addData (args):
                 if field not in propD:
                     propD[field] = 'NA'
             outL += 1
-            mh.writeSDF(mol, args.out, propD, ID=cmpdID)
+            mh.writeSDF(mol, outfh, propD, ID=cmpdID)
         else:
             # Add field values from the data file
             for field in dataD[cmpdID]:
@@ -92,10 +92,10 @@ def addData (args):
                     field = field+' (1)'
                 propD[field] = fieldValue
             outL += 1
-            mh.writeSDF(mol, args.out, propD, ID=cmpdID)
+            mh.writeSDF(mol, outfh, propD, ID=cmpdID)
         
-    args.sdf.close()
-    args.out.close()
+    sdfh.close()
+    outfh.close()
     
     sys.stdout.write("Input file has {} molecules\n".format(inL))
     sys.stdout.write("Output file has {} molecules\n".format(outL))
@@ -109,7 +109,7 @@ def main ():
     parser.add_argument('-o', '--out', type=argparse.FileType('w'), default='output.sdf', help='Output file name (default: output.sdf)')
     args = parser.parse_args()
 
-    addData(args)    
+    addData(args.sdf, args.data, args.id, args.out)    
 
 if __name__ == '__main__':    
     main()

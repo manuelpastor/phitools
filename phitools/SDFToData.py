@@ -24,7 +24,7 @@
 
 from rdkit import Chem
 from phitools import moleculeHelper as mh
-import os, sys, argparse, re
+import argparse
 
 sep = '\t'
 

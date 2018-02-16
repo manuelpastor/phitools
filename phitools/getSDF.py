@@ -22,8 +22,7 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
-import urllib.request, urllib.parse, urllib.error
-import os, sys, argparse
+import argparse
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from phitools import moleculeHelper as mh

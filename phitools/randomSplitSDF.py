@@ -22,7 +22,7 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
-import os, sys, argparse
+import sys, argparse
 import numpy as np
 from phitools import moleculeHelper as mh
 

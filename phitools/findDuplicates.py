@@ -23,17 +23,12 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 from rdkit import Chem
-from rdkit import RDLogger
-from rdkit.Chem import AllChem,Draw,Descriptors
 from phitools import moleculeHelper as mh
-import os, sys, argparse
+import sys, argparse
 
 sep = '\t'
 
 def findDuplicates (args): 
-
-    lg = RDLogger.logger()
-    lg.setLevel(RDLogger.ERROR)
 
     idlist = []
     nmlist = []
