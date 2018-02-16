@@ -1,4 +1,4 @@
-#!/usr/bin/env python#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 ##    Description    Add Data to SDFile
@@ -23,12 +23,214 @@
 ##    along with PhiTools.  If not, see <http://www.gnu.org/licenses/>
 
 
-from rdkit import Chem, DataStructs
-from rdkit.Chem import AllChem
+from rdkit import DataStructs
 from phitools import moleculeHelper as mh
+import pandas as pd
 import argparse, sys
 
 sep = '\t'
+
+def compareMax(fpA, fpB=None, cutoff=None):
+    
+    #################################
+    ### Get compound similarities ###
+    #################################
+
+    simD = {}
+    startSim = 0
+
+    namesA = list(fpA.keys())
+    nA = len(namesA)
+
+    # Work with only one input file
+    if fpB is None:
+        for name in namesA:
+            simD[name] = [None, None, None, startSim]
+
+        for i in range(nA):
+            name1 = namesA[i]
+            [fp1, smiles1] = fpA[name1]
+            for j in range(i+1, nA):
+                name2 = namesA[j]
+                [fp2, smiles2] = fpA[name2]
+                sim = DataStructs.TanimotoSimilarity(fp1, fp2)
+                if cutoff is not None and sim < cutoff:
+                    continue
+                
+                if sim > simD[name1][-1]: 
+                    simD[name1] = [name2, smiles1, smiles2, sim]
+                if sim > simD[name2][-1]: 
+                    simD[name2] = [name1, smiles2, smiles1, sim]
+
+    # Work with two input files
+    else:
+        namesB = list(fpB.keys())
+        nB = len(namesB)
+
+        for name in namesA:
+            simD[name] = [None, None, None, startSim]
+        for name in namesB:
+            simD[name] = [None, None, None, startSim]
+
+        for i in range(nA):
+            name1 = namesA[i]
+            [fp1, smiles1] = fpA[name1]            
+            for j in range(nB):
+                name2 = namesB[j]
+                [fp2, smiles2] = fpB[name2]
+
+                sim = DataStructs.TanimotoSimilarity(fp1, fp2) #DataStructs.DiceSimilarity(fp1, fp2)
+                if cutoff is not None and sim < cutoff:
+                    continue
+
+                if sim > simD[name1][-1]: 
+                    simD[name1] = [name2, smiles1, smiles2, sim]
+    
+    # Remove compounds with no neighbours over the cutoff
+    d = {x:simD[x] for x in simD if simD[x][0] is not None}
+
+    # Convert dictionary to pandas dataframe
+    df = pd.DataFrame.from_dict(d, orient='index')
+    df.reset_index(level=0, inplace=True)
+    df.columns = ['cmpd1', 'cmpd2', 'smiles1', 'smiles2', 'similarity']
+
+    return df
+
+def compareMin(fpA, fpB=None, cutoff=None):
+    
+    #################################
+    ### Get compound similarities ###
+    #################################
+
+    simD = {}
+    startSim = 1
+
+    namesA = list(fpA.keys())
+    nA = len(namesA)
+
+    # Work with only one input file
+    if fpB is None:
+        for name in namesA:
+            simD[name] = [None, None, None, startSim]
+
+        for i in range(nA):
+            name1 = namesA[i]
+            [fp1, smiles1] = fpA[name1]
+            for j in range(i+1, nA):
+                name2 = namesA[j]
+                [fp2, smiles2] = fpA[name2]
+                sim = DataStructs.TanimotoSimilarity(fp1, fp2)
+                if cutoff is not None and sim < cutoff:
+                    continue
+                
+                if sim < simD[name1][-1]: 
+                    simD[name1] = [name2, smiles1, smiles2, sim]
+                if sim < simD[name2][-1]: 
+                    simD[name2] = [name1, smiles2, smiles1, sim]
+
+    # Work with two input files
+    else:
+        namesB = list(fpB.keys())
+        nB = len(namesB)
+
+        for name in namesA:
+            simD[name] = [None, None, None, startSim]
+        for name in namesB:
+            simD[name] = [None, None, None, startSim]
+
+        for i in range(nA):
+            name1 = namesA[i]
+            [fp1, smiles1] = fpA[name1]            
+            for j in range(nB):
+                name2 = namesB[j]
+                [fp2, smiles2] = fpB[name2]
+
+                sim = DataStructs.TanimotoSimilarity(fp1, fp2) #DataStructs.DiceSimilarity(fp1, fp2)
+                if cutoff is not None and sim < cutoff:
+                    continue
+
+                if sim < simD[name1][-1]: 
+                    simD[name1] = [name2, smiles1, smiles2, sim]
+
+    # Remove compounds with no neighbours over the cutoff
+    d = {x:simD[x] for x in simD if simD[x][0] is not None}
+
+    # Convert dictionary to pandas dataframe
+    df = pd.DataFrame.from_dict(d, orient='index')
+    # reset_index fails in pandas 0.20.1
+    #df.reset_index(level=0, inplace=True)
+    df['cmpd1'] = df.index
+    df.columns = ['cmpd2', 'smiles1', 'smiles2', 'similarity', 'cmpd1']
+    df = df[['cmpd1', 'cmpd2', 'smiles1', 'smiles2', 'similarity']]
+
+    return df
+
+def compareAll(fpA, fpB=None, cutoff=None):
+    
+    #################################
+    ### Get compound similarities ###
+    #################################
+
+    simD = {}
+    startSim = 1
+
+    namesA = list(fpA.keys())
+    nA = len(namesA)
+
+    # Work with only one input file
+    if fpB is None:
+        for name in namesA:
+            simD[name] = [None, None, None, startSim]
+
+        for i in range(nA):
+            name1 = namesA[i]
+            [fp1, smiles1] = fpA[name1]
+            for j in range(i+1, nA):
+                name2 = namesA[j]
+                [fp2, smiles2] = fpA[name2]
+                sim = DataStructs.TanimotoSimilarity(fp1, fp2)
+                if cutoff is not None and sim < cutoff:
+                    continue
+                
+                simD[name1] = [name2, smiles1, smiles2, sim]
+                simD[name2] = [name1, smiles2, smiles1, sim]
+
+    # Work with two input files
+    else:
+        namesB = list(fpB.keys())
+        nB = len(namesB)
+
+        for name in namesA:
+            simD[name] = [None, None, None, startSim]
+        for name in namesB:
+            simD[name] = [None, None, None, startSim]
+
+        for i in range(nA):
+            name1 = namesA[i]
+            [fp1, smiles1] = fpA[name1]            
+            for j in range(nB):
+                name2 = namesB[j]
+                [fp2, smiles2] = fpB[name2]
+
+                sim = DataStructs.TanimotoSimilarity(fp1, fp2) #DataStructs.DiceSimilarity(fp1, fp2)
+                if cutoff is not None and sim < cutoff:
+                    continue
+
+                simD[name1] = [name2, smiles1, smiles2, sim]
+
+    # Remove compounds with no neighbours over the cutoff
+    d = {x:simD[x] for x in simD if simD[x][0] is not None}
+
+    # Convert dictionary to pandas dataframe
+    df = pd.DataFrame.from_dict(d, orient='index')
+    # reset_index fails in pandas 0.20.1
+    #df.reset_index(level=0, inplace=True)
+    df['cmpd1'] = df.index
+    df.columns = ['cmpd2', 'smiles1', 'smiles2', 'similarity', 'cmpd1']
+    df = df[['cmpd1', 'cmpd2', 'smiles1', 'smiles2', 'similarity']]
+
+    return df
+
 
 def compare(args):
 
@@ -39,85 +241,18 @@ def compare(args):
     fpRadius = int(args.descriptor[4:])
 
     fpA = mh.getFPdict (args.format, args.filea, molID= args.id, smilesI= args.col, header= args.header, fpType= fpType, radius= fpRadius)
-    namesA = list(fpA.keys())
-    nA = len(namesA)
 
     if args.fileb is not None:
         fpB = mh.getFPdict (args.format, args.fileb, molID= args.id, smilesI= args.col, header= args.header, fpType= fpType, radius= fpRadius)
-        namesB = list(fpB.keys())
-        nB = len(namesB)
-    
-    #################################
-    ### Get compound similarities ###
-    #################################
 
-    simD = {}
-    if args.sim == 'max': startSim = 0
-    else: startSim = 1
+    if args.sim == 'max':
+        df = compareMax(fpA, fpB, args.cutoff)
+    elif args.sim == 'min':
+        df = compareMin(fpA, fpB, args.cutoff)
+    elif args.sim == 'all':
+        df = compareAll(fpA, fpB, args.cutoff)
 
-    # Work with only one input file
-    if args.fileb is None:
-        for name in namesA:
-            simD[name] = ['', startSim]
-
-        for i in range(nA):
-            name1 = namesA[i]
-            [fp1, smiles1] = fpA[name1]
-            for j in range(i+1, nA):
-                name2 = namesA[j]
-                [fp2, smiles2] = fpA[name2]
-                sim = DataStructs.TanimotoSimilarity(fp1, fp2)
-                if args.cutoff is not None and sim < args.cutoff:
-                    continue
-
-                if args.sim == 'all':
-                    args.out.write('{}\t{}\t{}\t{}\t{}\n'.format(name1, smiles1, name2, smiles2, sim))
-                    args.out.write('{}\t{}\t{}\t{}\t{}\n'.format(name2, smiles2, name1, smiles1, sim))
-                else:
-                    if args.sim == 'max':
-                        if sim > simD[name1][1]: simD[name1] = [name2, smiles2, sim]
-                        if sim > simD[name2][1]: simD[name2] = [name1, smiles1, sim]
-                    else:
-                        if sim < simD[name1][1]: simD[name1] = [name2, smiles2, sim]
-                        if sim < simD[name2][1]: simD[name2] = [name1, smiles1, sim]
-
-        if args.sim != 'all':
-            for name in simD:
-                args.out.write('{}\t{}\t{}\t{}\n'.format(name, simD[name][0], simD[name][1], simD[name][2]))
-
-    # Work with two input files
-    else:
-        for name in namesA:
-            simD[name] = [None, '', startSim]
-        for name in namesB:
-            simD[name] = [None, '', startSim]
-
-        for i in range(nA):
-            name1 = namesA[i]
-            [fp1, smiles1] = fpA[name1]            
-            for j in range(nB):
-                name2 = namesB[j]
-                [fp2, smiles2] = fpB[name2]
-
-                sim = DataStructs.TanimotoSimilarity(fp1, fp2) #DataStructs.DiceSimilarity(fp1, fp2)
-                if args.cutoff is not None and sim < args.cutoff:
-                    continue
-
-                if args.sim == 'all':
-                    args.out.write('{}\t{}\t{}\t{}\t{}\n'.format(name1, smiles1, name2, smiles2, sim))
-                else:
-                    if args.sim == 'max':
-                        if sim > simD[name1][-1]: simD[name1] = [name2, smiles2, sim]
-                    else:
-                        if sim < simD[name1][-1]: simD[name1] = [name2, smiles2, sim]
-
-        if args.sim != 'all':
-            for name in simD:
-                if simD[name][0] is None:
-                    continue
-                buffer = [name]
-                buffer.extend(simD[name])
-                args.out.write('{}\n'.format('\t'.join(str(v) for v in buffer)))
+    df.to_csv(args.out, sep= '\t', header= True, index=False)
                         
 
 
