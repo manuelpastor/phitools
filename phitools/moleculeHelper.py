@@ -27,6 +27,7 @@ from rdkit.Chem import AllChem
 from standardiser import standardise
 
 import sys, os
+import urllib.request
 
 try:
     __import__('EPA')
@@ -60,9 +61,8 @@ def resolveCAS(cas, conn=None):
     
     # Then try using the CACTVS web service to retrieve the SMILES
     try:
-        smi = urllib.request.urlopen('http://cactus.nci.nih.gov/chemical/structure/'+cas+'/smiles')
-        smi = smi.readline().decode("utf-8").rstrip().replace('|', '')
-        smi = smi.readline().decode("utf-8").rstrip()
+        smi = urllib.request.urlopen('https://cactus.nci.nih.gov/chemical/structure/'+cas+'/smiles')
+        smi = smi.read().decode("utf-8").rstrip().replace('|', '')
     except:
         smi = ''
         
