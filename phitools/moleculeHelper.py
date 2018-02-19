@@ -36,7 +36,7 @@ except ImportError:
     sys.stderr.write('\n*** Could not find EPA module. Will use only the CACTVS web service to resolve CAS number structures. ***\n\n')
 else:
     useEPA = True
-    import EPA
+    from EPA import EPA
 
 try:
     __import__('compoundDB')
