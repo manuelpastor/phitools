@@ -153,11 +153,11 @@ def getFPdict_sdf (fh, molID= None, fpType= 'ecfp', radius= 4):
     
     return fpD
 
-def getFPdict_pandas (df, molID= 'mol', fpType= 'ecfp', radius= None):
+def getFPdict_pandas (df, molID= 'ID', molField= 'mol', fpType= 'ecfp', radius= None):
 
     fp = '{}.{}'.format(fpType, radius)
-    fpD = [ getFP(Chem.AddHs(mol, addCoords=False), fpType, radius) \
-              for mol in df[molID] ]
+    fpD = { row[molID]: [getFP(Chem.AddHs(row[molField], addCoords=False), fpType, radius), Chem.MolToSmiles(row[molField])] \
+              for index, row in df.iterrows() }
     
     return fpD
 
