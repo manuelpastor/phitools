@@ -222,12 +222,8 @@ def compareAll(fpA, fpB=None, cutoff=None):
     d = {x:simD[x] for x in simD if simD[x][0] is not None}
 
     # Convert dictionary to pandas dataframe
-    df = pd.DataFrame.from_dict(d, orient='index')
-    # reset_index fails in pandas 0.20.1
-    #df.reset_index(level=0, inplace=True)
-    df['cmpd1'] = df.index
-    df.columns = ['cmpd2', 'smiles1', 'smiles2', 'similarity', 'cmpd1']
-    df = df[['cmpd1', 'cmpd2', 'smiles1', 'smiles2', 'similarity']]
+    df = pd.DataFrame.from_dict(d, orient='index').reset_index()
+    df.columns = ['cmpd1', 'cmpd2', 'smiles1', 'smiles2', 'similarity']
 
     return df
 
