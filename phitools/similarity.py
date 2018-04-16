@@ -110,10 +110,9 @@ def compareMin(fpA, fpB=None, cutoff=None):
 
     # Work with only one input file
     if fpB is None:
-        for name in namesA:
-            simD[name] = [None, None, None, startSim]
 
         for i in range(nA):
+            simD[name] = [None, None, None, startSim]
             name1 = namesA[i]
             [fp1, smiles1] = fpA[name1]
             for j in range(i+1, nA):
@@ -131,17 +130,11 @@ def compareMin(fpA, fpB=None, cutoff=None):
     # Work with two input files
     else:
         namesB = list(fpB.keys())
-        nB = len(namesB)
 
-        for name in namesA:
-            simD[name] = [None, None, None, startSim]
-        for name in namesB:
-            simD[name] = [None, None, None, startSim]
-
-        for i in range(nA):
-            name1 = namesA[i]
+        for name1 in namesA:
+            simD[name1] = [None, None, None, startSim]
             [fp1, smiles1] = fpA[name1]            
-            for j in range(nB):
+            for name2 in namesB:
                 name2 = namesB[j]
                 [fp2, smiles2] = fpB[name2]
 
@@ -165,64 +158,54 @@ def compareMin(fpA, fpB=None, cutoff=None):
 
     return df
 
-def compareAll(fpA, fpB=None, cutoff=None):
+def compareAll(fpA_dict, fpB_dict=None, cutoff=None):
     
     #################################
     ### Get compound similarities ###
     #################################
 
     simD = {}
-    startSim = 1
-
-    namesA = list(fpA.keys())
+    namesA = list(fpA_dict.keys())
     nA = len(namesA)
 
     # Work with only one input file
     if fpB is None:
-        for name in namesA:
-            simD[name] = [None, None, None, startSim]
-
         for i in range(nA):
             name1 = namesA[i]
-            [fp1, smiles1] = fpA[name1]
+            simD[name1] = {}
+            [fp1, smiles1] = fpA_dict[name1]
             for j in range(i+1, nA):
                 name2 = namesA[j]
-                [fp2, smiles2] = fpA[name2]
+                [fp2, smiles2] = fpA_dict[name2]
                 sim = DataStructs.TanimotoSimilarity(fp1, fp2)
                 if cutoff is not None and sim < cutoff:
-                    continue
-                
-                simD[name1] = [name2, smiles1, smiles2, sim]
-                simD[name2] = [name1, smiles2, smiles1, sim]
+                    simD[name1][name2] = None
+                    simD[name2][name1] = None
+                else:                                    
+                    simD[name1][name2] = [smiles1, smiles2, sim]
+                    simD[name2][name1] = [smiles2, smiles1, sim]
 
     # Work with two input files
     else:
-        namesB = list(fpB.keys())
-        nB = len(namesB)
+        namesB = list(fpB_dict.keys())
 
-        for name in namesA:
-            simD[name] = [None, None, None, startSim]
-        for name in namesB:
-            simD[name] = [None, None, None, startSim]
+        for nameA in namesA:
+            simD[nameA] = {}
+            [fpA, smilesA] = fpA_dict[nameA]
+            for nameB in namesB:
+                [fpB, smilesB] = fpB_dict[nameB]
+                sim = DataStructs.TanimotoSimilarity(fpA, fpB) #DataStructs.DiceSimilarity(fp1, fp2)
 
-        for i in range(nA):
-            name1 = namesA[i]
-            [fp1, smiles1] = fpA[name1]            
-            for j in range(nB):
-                name2 = namesB[j]
-                [fp2, smiles2] = fpB[name2]
-
-                sim = DataStructs.TanimotoSimilarity(fp1, fp2) #DataStructs.DiceSimilarity(fp1, fp2)
                 if cutoff is not None and sim < cutoff:
-                    continue
-
-                simD[name1] = [name2, smiles1, smiles2, sim]
+                    simD[nameA][nameB] = None
+                else:
+                    simD[nameA][nameB] = [smilesA, smilesB, sim]
 
     # Remove compounds with no neighbours over the cutoff
-    d = {x:simD[x] for x in simD if simD[x][0] is not None}
+    d = {x:simD[x] for x in simD if simD[x] is not None}
 
     # Convert dictionary to pandas dataframe
-    df = pd.DataFrame.from_dict(d, orient='index').reset_index()
+    df = pd.DataFrame.from_records([[i, j] + d[i][j] for i in d for j in d[i]])
     df.columns = ['cmpd1', 'cmpd2', 'smiles1', 'smiles2', 'similarity']
 
     return df
