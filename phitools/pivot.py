@@ -82,8 +82,7 @@ def pivotone(args, coli):
       except:
         newLine.append('')
         continue
-
-    field = fields[coli].strip()
+        
     if field == '':
       # Empty cell
       newLine.append('')

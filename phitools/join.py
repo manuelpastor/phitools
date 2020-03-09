@@ -43,7 +43,7 @@ def join (args):
     try:
         indexA = ha.index(args.key)
     except:
-        sys.stderr.write('Key not fount in file {}\n'.format(fa.name))
+        sys.stderr.write('Key not found in file {}\n'.format(fa.name))
         sys.exit(1)
 
     hb = fb.readline().rstrip().replace('\ufeff', '').split(sep)

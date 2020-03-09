@@ -39,7 +39,7 @@ except ImportError:
     sys.stderr.write('\n*** Could not find EPA module. Will use only the CACTVS web service. ***\n\n')
 else:
     useEPA = True
-    from EPA import comptox_lookup, comptox_link
+    from EPA.EPA import comptox_lookup, comptox_link
 
 def writeStructure(q, mol, args):
 
@@ -82,7 +82,7 @@ def getStructure(args):
     else:
         # First try using compounds DB to retrieve the SMILES
         try:
-            conn = it.openconnection(host='172.20.16.76', dbname='compounds', user='postgres', password=args.dbpass)
+            conn = it.openconnection(host='gea', dbname='compounds', user='postgres', password=args.dbpass)
         except:
             sys.stdout.write('Could not connect to the compound DB.\n')
         else:
@@ -106,7 +106,7 @@ def getStructure(args):
                 
             # And finally try to use Francis Atkinson's code to call EPA if it's available
             if useEPA and smi == '':
-                print ('EPA')
+                
                 try:
                     tmp = comptox_lookup(q)
                 except:
