@@ -1,0 +1,5 @@
+build/
+dist/
+phitools.egg-info/
+phitools/.vscode/
+
